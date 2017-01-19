@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+## Step 1. Install needed Python packages:
+
+pip install --user sklearn xgboost bokeh lasagne graphviz
+
+## Step 2. Download notebooks and misc stuff from Github:
+
 base="https://raw.githubusercontent.com/CSC-IT-Center-for-Science/machine-learning-scripts/master/notebooks"
 
 for i in keras-test-setup.ipynb \
@@ -21,3 +27,5 @@ for i in 500px-KnnClassification.svg.png \
 do
     wget "$base/imgs/$i"
 done
+
+## All done.
