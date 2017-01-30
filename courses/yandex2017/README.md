@@ -1,6 +1,6 @@
 # Deep neural networks
 
-Instructions on setting the environment for
+Instructions on setting up the environment for
 the
 [Deep neural networks course](https://www.csc.fi/web/training/-/yandex_2017).
 
@@ -12,17 +12,23 @@ Every user should be assigned a unique port number, in this example we use 8899.
 
     module purge
     module load python-env/3.4.5 cuda/8.0
+    export THEANO_FLAGS='device=gpu,floatX=float32'
+    
+Run these commands only once, that is, when setting up the environment
+for the first time:
 
-    # Run these commands only once:
     pip3 install --user /appl/opt/tensorflow/0.11.0/tensorflow-0.11.0-py3-none-any.whl
     pip3 install --user --upgrade https://github.com/Theano/Theano/archive/master.zip
     pip3 install --user --upgrade https://github.com/Lasagne/Lasagne/archive/master.zip 
     pip3 install --user notebook
 
-    export THEANO_FLAGS='device=gpu,floatX=float32'
 
-    # -t sets the time limit: HH:MM:SS 
-    srun -n 1 -p gpu --gres=gpu:1 -t 00:30:00 --pty $SHELL
+The `srun` command reserves a gpu on one of the compute nodes.  The
+option `-t` sets the time limit in the format `HH:MM:SS`, and
+`--reservation` gives access to the nodes reserved for this course
+(`XXX` should be either `wed`, `thu` or `fri`).
+    
+    srun -n 1 -p gpu --gres=gpu:1 -t 00:30:00 --reservation=dnn_XXX --pty $SHELL
     hostname  # you need this information later
     .local/bin/jupyter-notebook --no-browser --port=8899
 
