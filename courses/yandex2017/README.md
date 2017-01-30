@@ -1,10 +1,14 @@
 # Deep neural networks
 
-Instructions on setting up the environment for
+Instructions on setting up the seminar environment for
 the
-[Deep neural networks course](https://www.csc.fi/web/training/-/yandex_2017).
+[Deep neural networks course](https://www.csc.fi/web/training/-/yandex_2017) organized
+by [Yandex School of Data Analysis](http://yandexdataschool.com/),
+Higher School of Economics ([hse.ru](http://hse.ru)), and CSC.
 
-Every user should be assigned a unique port number, in this example we use 8899.
+Every user should be assigned a unique port number, in this example we
+use 8899.  Please make sure you use the port number assigned to you by
+the course organizers. 
 
 ## First terminal window (runs Jupyter notebook server):
 
@@ -26,7 +30,8 @@ for the first time:
 The `srun` command reserves a gpu on one of the compute nodes.  The
 option `-t` sets the time limit in the format `HH:MM:SS`, and
 `--reservation` gives access to the nodes reserved for this course
-(`XXX` should be either `wed`, `thu` or `fri`).
+(`XXX` should be either `wed`, `thu` or `fri`; it is also possible to
+use the unreserved nodes, by removing the `--reservation` option).
     
     srun -n 1 -p gpu --gres=gpu:1 -t 00:30:00 --reservation=dnn_XXX --pty $SHELL
     hostname  # you need this information later
