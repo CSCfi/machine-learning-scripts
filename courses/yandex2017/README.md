@@ -18,7 +18,9 @@ the course organizers.
     module load python-env/3.4.5 cuda/8.0
     export THEANO_FLAGS='device=gpu,floatX=float32'
     
-Run these commands only once, that is, when setting up the environment
+The `THEANO_FLAGS` environment variable is needed to inform Theano to use a GPU for computations.
+
+Run the following commands only once, that is, when setting up the environment
 for the first time:
 
     pip3 install --user /appl/opt/tensorflow/0.11.0/tensorflow-0.11.0-py3-none-any.whl
