@@ -29,11 +29,12 @@ for the first time:
 
 The `srun` command reserves a gpu on one of the compute nodes.  The
 option `-t` sets the time limit in the format `HH:MM:SS`, and
-`--reservation` gives access to the nodes reserved for this course
+`--reservation` gives access to the K80 nodes (4 GPUs per node) reserved for this course
 (`XXX` should be either `wed`, `thu` or `fri`; it is also possible to
 use the unreserved nodes, by removing the `--reservation` option).
-If you run out of memory, you can increase memory reservation like this: 
-`--mem-per-cpu=2G`.
+
+If you run out of CPU memory, you can increase memory reservation like this: 
+`--mem-per-cpu=4G`. The reserved nodes have a total of 32 GBs of main memory.
     
     srun -n 1 -p gpu --gres=gpu:1 -t 00:30:00 --reservation=dnn_XXX --pty $SHELL
     hostname  # you need this information later
