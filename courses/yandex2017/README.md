@@ -32,6 +32,8 @@ option `-t` sets the time limit in the format `HH:MM:SS`, and
 `--reservation` gives access to the nodes reserved for this course
 (`XXX` should be either `wed`, `thu` or `fri`; it is also possible to
 use the unreserved nodes, by removing the `--reservation` option).
+If you run out of memory, you can increase memory reservation like this: 
+`--mem-per-cpu=2G`.
     
     srun -n 1 -p gpu --gres=gpu:1 -t 00:30:00 --reservation=dnn_XXX --pty $SHELL
     hostname  # you need this information later
