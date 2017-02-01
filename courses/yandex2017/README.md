@@ -47,3 +47,8 @@ use the unreserved nodes, by removing the `--reservation` option).
 Point your browser to the URL given in the first terminal window, e.g.:
 
 http://localhost:8899/?token=c828f3351d0b76ccde12759b942d3ed3c622955e94d6cdc8
+
+# Course repository
+https://github.com/yandexdataschool/CSC_deeplearning
+
+
