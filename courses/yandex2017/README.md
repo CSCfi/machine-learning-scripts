@@ -38,7 +38,7 @@ use the unreserved nodes, by removing the `--reservation` option).
 If you run out of CPU memory, you can increase memory reservation like this: 
 `--mem-per-cpu=4G`. The reserved nodes have a total of 32 GBs of main memory.
     
-    srun -n 1 -p gpu --gres=gpu:1 -t 00:30:00 --reservation=dnn_XXX --pty $SHELL
+    srun -n 1 -p gpu --gres=gpu:1 -t 04:00:00 --reservation=dnn_XXX --mem-per-cpu=4G --pty $SHELL
     hostname  # you need this information later
     .local/bin/jupyter-notebook --no-browser --port=8899
 
