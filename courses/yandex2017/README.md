@@ -7,8 +7,9 @@ by [Yandex School of Data Analysis](http://yandexdataschool.com/),
 Higher School of Economics ([hse.ru](http://hse.ru)), and CSC on February 1-3, 2017.
 
 Every user should be assigned a unique port number, in this example we
-use 8899.  Please make sure you use the port number assigned to you by
-the course organizers. 
+use 8899.  During the course please make sure you use the port number assigned to you by
+the course organizers. Otherwise, you are free to select a suitable port from the range 
+1024-49151. 
 
 ## First terminal window (runs Jupyter notebook server):
 
@@ -30,7 +31,7 @@ for the first time:
     pip3 install --user notebook
 
 
-The `srun` command reserves a gpu on one of the compute nodes.  The
+The `srun` command reserves a gpu and opens a shell on one of the compute nodes.  The
 option `-t` sets the time limit in the format `HH:MM:SS`, and
 `--reservation` gives access to the K80 nodes (4 GPUs per node) reserved for this course
 (`XXX` should be either `wed`, `thu` or `fri`; it is also possible to
