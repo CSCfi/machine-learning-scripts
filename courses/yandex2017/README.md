@@ -4,7 +4,7 @@ Instructions on setting up the seminar environment for
 the
 [Deep neural networks course](https://www.csc.fi/web/training/-/yandex_2017) organized
 by [Yandex School of Data Analysis](http://yandexdataschool.com/),
-Higher School of Economics ([hse.ru](http://hse.ru)), and CSC.
+Higher School of Economics ([hse.ru](http://hse.ru)), and CSC on February 1-3, 2017.
 
 Every user should be assigned a unique port number, in this example we
 use 8899.  Please make sure you use the port number assigned to you by
