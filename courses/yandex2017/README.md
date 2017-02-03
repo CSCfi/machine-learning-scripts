@@ -17,8 +17,9 @@ the course organizers.
     module purge
     module load python-env/3.4.5 cuda/8.0
     export THEANO_FLAGS='device=gpu,floatX=float32'
+    export OMP_NUM_THREADS=4
     
-The `THEANO_FLAGS` environment variable is needed to inform Theano to use a GPU for computations.
+The `THEANO_FLAGS` environment variable is needed to inform Theano to use a GPU for computations.  The `OMP_NUM_THREADS` limits the number of CPUs Theano will use.
 
 Run the following commands only once, that is, when setting up the environment
 for the first time:
