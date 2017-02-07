@@ -2,7 +2,7 @@
 
 ## Step 1. Install needed Python packages:
 
-pip install --user sklearn xgboost bokeh lasagne graphviz
+pip install --user sklearn xgboost bokeh lasagne graphviz scikit-image
 
 ## Step 2. Download notebooks and misc stuff from Github:
 
@@ -14,7 +14,8 @@ for i in keras-test-setup.ipynb \
          sklearn-mnist-dt.ipynb \
          sklearn-mnist-nn.ipynb \
          sklearn-mnist-svm.ipynb \
-         sklearn-mnist-viz.ipynb
+         sklearn-mnist-viz.ipynb \
+	 sklearn-mnist-dr.ipynb
 do
     wget "$base/$i"
 done
