@@ -6,7 +6,7 @@ pip install --user sklearn xgboost bokeh lasagne graphviz scikit-image
 
 ## Step 2. Download notebooks and misc stuff from Github:
 
-base="https://raw.githubusercontent.com/CSC-IT-Center-for-Science/machine-learning-scripts/keras1-legacy/notebooks"
+base="https://raw.githubusercontent.com/CSCfi/machine-learning-scripts/keras1-legacy/notebooks"
 
 for i in keras-test-setup.ipynb \
          keras-mnist-mlp.ipynb \
@@ -28,9 +28,5 @@ for i in 500px-KnnClassification.svg.png \
 do
     wget "$base/imgs/$i"
 done
-
-## Step 3. Remove this script:
-
-rm download.sh
 
 ## All done.
