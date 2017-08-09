@@ -69,6 +69,12 @@ Show an overview of all partitions:
 
     sinfo
 
+## Disk space
+
+The home directories have a quota of 50 GB and are not intended for research data.  Use `$WRKDIR` for data storage instead. 
+
+See https://research.csc.fi/csc-guide-directories-and-data-storage-at-csc for more information.
+
 ## Further information
 
 See the [Taito User Guide](https://research.csc.fi/taito-user-guide), in particular [Section 3: Batch jobs](https://research.csc.fi/taito-batch-jobs) and [Section 6: Using Taito-GPU](https://research.csc.fi/taito-gpu).
