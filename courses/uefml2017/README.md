@@ -13,7 +13,7 @@ instructions on how to register as a new CSC user.
 
 ## Logging in and setting up the computing environment
 
-    ssh -l USERNAME taito-gpu.csc.fi
+    ssh -l <USERNAME> taito-gpu.csc.fi
 
     module purge
     module load python-env/3.4.5 cuda/8.0.61 cudnn/6.0
@@ -42,3 +42,20 @@ this: `--mem=8G`.  Please note that this does not affect GPU memory,
 which the K40 and K80 cards have 12 GBs, all of which is automatically
 available when the card is reserved.
 
+## Other useful commands
+
+Show all jobs on partition (queue) *gpu*:
+
+    squeue -l -p gpu
+
+Show all own jobs:
+
+    squeue -l -u <USERNAME>
+
+Delete a job:
+
+    scancel <JOBID>
+
+Show an overview of all partitions:
+
+    sinfo
