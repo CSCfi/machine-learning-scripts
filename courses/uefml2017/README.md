@@ -31,6 +31,8 @@ environment for the first time:
     pip3 install --user theano
     pip3 install --user keras
     git clone https://github.com/CSCfi/machine-learning-scripts.git
+    
+Note that a specific CSC-compiled version of TensorFlow is required in Taito-GPU. See https://research.csc.fi/-/tensorflow for further instructions.
 
 ## Running batch jobs
 
