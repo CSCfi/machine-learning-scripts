@@ -59,3 +59,7 @@ Delete a job:
 Show an overview of all partitions:
 
     sinfo
+
+## Further information
+
+See the [Taito User Guide](https://research.csc.fi/taito-user-guide), in particular [Section 3: Batch jobs](https://research.csc.fi/taito-batch-jobs) and [Section 6: Using Taito-GPU](https://research.csc.fi/taito-gpu).
