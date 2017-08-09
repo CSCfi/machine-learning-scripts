@@ -71,7 +71,7 @@ Show an overview of all partitions:
 
     sinfo
 
-## Disk space
+## Data storage
 
 The home directories have a quota of 50 GB and are not intended for research data.  Use `$WRKDIR` for data storage instead. 
 
