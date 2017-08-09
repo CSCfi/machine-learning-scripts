@@ -34,8 +34,8 @@ environment for the first time:
 
 ## Running batch jobs
 
-   cd machine-learning-scripts/slurm
-   sbatch run-python-gputest.sh tensorflow-test.py
+    cd machine-learning-scripts/slurm
+    sbatch run-python-gputest.sh tensorflow-test.py
 
 If you run out of CPU memory, you can increase memory reservation like
 this: `--mem=8G`.  Please note that this does not affect GPU memory,
