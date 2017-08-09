@@ -36,11 +36,20 @@ environment for the first time:
 
     cd machine-learning-scripts/slurm
     sbatch run-python-gputest.sh tensorflow-test.py
+    sbatch run-python-gpu-1h.sh keras-test.py
+
+The `gputest` partition is intended for quick testing (as it has a time limit of 15 minutes), so submit all real jobs to `gpu` or `gpulong`.  
+
+The example script `run-python-gpu-1h.sh` has a time limit of 1 hour, which can be changed with the option `-t HOURS:MINUTES:SECONDS` or `-t DAYS-HOURS:MINUTES:SECONDS`.
+
+The example scripts reserve a single GPU with `--gres=gpu:1`.  This can be changed to 2 or 4.  The K40 nodes have 2 GPUs and the K80 nodes have 4 GPUs. 
 
 If you run out of CPU memory, you can increase memory reservation like
 this: `--mem=8G`.  Please note that this does not affect GPU memory,
 which the K40 and K80 cards have 12 GBs, all of which is automatically
 available when the card is reserved.
+
+See `man sbatch` for further information and options.
 
 ## Other useful commands
 
