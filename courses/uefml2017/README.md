@@ -13,7 +13,7 @@ instructions on how to register as a new CSC user.
 
 ## Logging in and setting up the computing environment
 
-    ssh -l USERNAME taito-gpu.csc.fi
+    ssh -l <USERNAME> taito-gpu.csc.fi
 
     module purge
     module load python-env/3.4.5 cuda/8.0.61 cudnn/6.0
@@ -31,14 +31,52 @@ environment for the first time:
     pip3 install --user theano
     pip3 install --user keras
     git clone https://github.com/CSCfi/machine-learning-scripts.git
+    
+Note that a specific CSC-compiled version of TensorFlow is required in Taito-GPU. See https://research.csc.fi/-/tensorflow for further instructions.
 
 ## Running batch jobs
 
-   cd machine-learning-scripts/slurm
-   sbatch run-python-gputest.sh tensorflow-test.py
+    cd machine-learning-scripts/slurm
+    sbatch run-python-gputest.sh tensorflow-test.py
+    sbatch run-python-gpu-1h.sh keras-test.py
+
+The `gputest` partition is intended for quick testing (as it has a time limit of 15 minutes), so submit all real jobs to `gpu` or `gpulong`.  
+
+The example script `run-python-gpu-1h.sh` has a time limit of 1 hour, which can be changed with the option `-t HOURS:MINUTES:SECONDS` or `-t DAYS-HOURS:MINUTES:SECONDS`.
+
+The example scripts reserve a single GPU with `--gres=gpu:1`.  This can be changed to 2 or 4.  The K40 nodes have 2 GPUs and the K80 nodes have 4 GPUs. 
 
 If you run out of CPU memory, you can increase memory reservation like
 this: `--mem=8G`.  Please note that this does not affect GPU memory,
 which the K40 and K80 cards have 12 GBs, all of which is automatically
 available when the card is reserved.
 
+See `man sbatch` for further information and options.
+
+## Other useful commands
+
+Show all jobs on partition (queue) *gpu*:
+
+    squeue -l -p gpu
+
+Show all own jobs:
+
+    squeue -l -u <USERNAME>
+
+Delete a job:
+
+    scancel <JOBID>
+
+Show an overview of all partitions:
+
+    sinfo
+
+## Data storage
+
+The home directories have a quota of 50 GB and are not intended for research data.  Use `$WRKDIR` for data storage instead. 
+
+See https://research.csc.fi/csc-guide-directories-and-data-storage-at-csc for more information.
+
+## Further information
+
+See the [Taito User Guide](https://research.csc.fi/taito-user-guide), in particular [Section 3: Batch jobs](https://research.csc.fi/taito-batch-jobs) and [Section 6: Using Taito-GPU](https://research.csc.fi/taito-gpu).
