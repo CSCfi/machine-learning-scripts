@@ -40,6 +40,7 @@ Note that a specific CSC-compiled version of TensorFlow is required in Taito-GPU
     sbatch run-python-gputest.sh tensorflow-test.py
     sbatch run-python-gpu-1h.sh keras-test.py
     sbatch run-python-gpu-1h.sh keras-mnist_cnn.py
+    sbatch run-python-gpu-1h.sh keras-titles-rnn.py
 
 The `gputest` partition is intended for quick testing (as it has a time limit of 15 minutes), so submit all real jobs to `gpu` or `gpulong`.  
 
