@@ -7,8 +7,6 @@
 # 
 # First, the needed imports. Keras tells us which backend (Theano or Tensorflow) it will be using.
 
-# In[1]:
-
 import sys
 import os
 sys.path.insert(0, os.path.expanduser('~/.local/lib/python3.4/site-packages/'))
@@ -38,9 +36,6 @@ assert(LV(__version__) >= LV("2.0.0"))
 
 # Next, let's load our training data.  The data consists of movie and book titles originally downloaded from [here](https://github.com/markriedl/WikiPlots).  For our purposes, the data has been slightly modified to reduce the number of rare characters. 
 
-# In[2]:
-
-
 path = get_file('titles-translated', origin='https://kannu.csc.fi/s/Md68oCy6l62CuKC/download')
 text = open(path).read().lower()
 
@@ -60,10 +55,6 @@ print()
 print('Number of unique chars:', len(chars))
 print(chars)
 
-
-# In[3]:
-
-
 # cut the text in semi-redundant sequences of maxlen characters
 maxlen = 10
 step = 3
@@ -79,7 +70,6 @@ for i in range(10):
     print('[{}]:[{}]'.format(sentences[i], next_chars[i]))
 
 
-# In[4]:
 
 
 print('Vectorization...')
@@ -102,9 +92,6 @@ print('Size of y: {:.2f} MB'.format(y.nbytes/1024/1024))
 #  * `GRU`, the Gated Recurrent Unit layer.
 # 
 # See https://keras.io/layers/recurrent/ for more information.
-
-# In[5]:
-
 
 # Number of hidden units to use:
 nb_units = 128
@@ -132,18 +119,12 @@ model.compile(loss='categorical_crossentropy',
 print(model.summary())
 
 
-# In[6]:
-
-
 #SVG(model_to_dot(model, show_shapes=True).create(prog='dot', format='svg'))
 
 
 # ### Learning
 # 
 # Let's first define a helper function to sample the next character. 
-
-# In[7]:
-
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
@@ -159,13 +140,7 @@ def sample(preds, temperature=1.0):
 # 
 # This is a relatively complex model, so training (especially with LSTM and GRU layers) can be quite slow without GPUs. 
 
-# In[8]:
-
-
 lossv = []
-
-
-# In[ ]:
 
 
 epochs = 10
@@ -205,9 +180,6 @@ for iteration in range(0, epochs):
             sys.stdout.flush()
 
 
-# In[ ]:
-
-
 #plt.figure(figsize=(5,3))
 #plt.plot(lossv)
 #plt.title('loss');
@@ -215,11 +187,9 @@ for iteration in range(0, epochs):
 
 # ### Inference 
 
-# In[ ]:
-
+print('###### INFERENCE ######')
 
 diversity = 0.8
-#           0123456789
 sentence = " " * 10
 
 for i in range(1000):
@@ -237,8 +207,6 @@ for i in range(1000):
     sys.stdout.write(next_char)
     sys.stdout.flush()
 
-
-# In[ ]:
 
 
 
