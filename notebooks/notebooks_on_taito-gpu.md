@@ -20,7 +20,7 @@ for the first time:
 
 The `srun` command reserves a gpu and opens a shell on one of the compute nodes.  The
 option `-t` sets the time limit in the format `HH:MM:SS`, the option `--mem` sets the memory 
-reservation, and `--gres=gpu:X` reserves `X` GPUs (1<=`X`$<=4).
+reservation, and `--gres=gpu:X` reserves `X` GPUs (1<=`X`<=4).
 
     srun -p gpu --gres=gpu:1 -t 04:00:00 --mem=8G --pty $SHELL
     hostname  # you need this information later
