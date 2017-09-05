@@ -10,7 +10,7 @@ overlaps.  You are free to select a suitable port from the range 1024-49151.
     ssh -l USERNAME taito-gpu.csc.fi
 
     module purge
-    module load python-env/3.4.5 cuda/8.0
+    module load python-env/3.4.5 cuda/8.0.61 cudnn/6.0
 
 Run the following commands only once, that is, when setting up the environment
 for the first time:
