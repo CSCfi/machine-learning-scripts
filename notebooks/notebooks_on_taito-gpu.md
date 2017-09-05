@@ -19,6 +19,8 @@ for the first time:
     pip3 install --user /appl/opt/tensorflow/1.3.0/tensorflow-1.3.0-cp34-cp34m-linux_x86_64.whl
     pip3 install --user keras notebook
 
+Further instructions on setting up TensorFlow in Taito-GPU can be found at https://research.csc.fi/-/tensorflow .
+
 The `srun` command reserves a gpu and opens a shell on one of the compute nodes.  The
 option `-t` sets the time limit in the format `HH:MM:SS`, the option `--mem` sets the memory 
 reservation, and `--gres=gpu:X` reserves `X` GPUs (1<=`X`<=4).
