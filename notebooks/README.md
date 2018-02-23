@@ -1,6 +1,6 @@
 # Machine learning notebooks
 
-A collection of Jupyter Python notebooks related to machine learning, using either [Keras](https://keras.io/), [PyTorch](http://pytorch.org/), [scikit-learn](http://scikit-learn.org/stable/), or [minisom](https://github.com/JustGlowing/minisom).  For `master` branch, version >= 2 of keras is required. Legacy versions for keras 1.x can be found in the `keras1-legacy` branch. 
+A collection of Jupyter Python notebooks related to machine learning, using either [Keras](https://keras.io/), [PyTorch](http://pytorch.org/), [scikit-learn](http://scikit-learn.org/stable/), or [minisom](https://github.com/JustGlowing/minisom).  For `master` branch, version >= 2 of keras is required. Legacy versions for keras 1.x of some of the notebooks can be found in the `keras1-legacy` branch. 
 
 * **sklearn-mnist-viz**: Visualizing MNIST handwritten digits using scikit-learn
 * **sklearn-mnist-dr**: Dimensionality reduction for MNIST digits using scikit-learn
