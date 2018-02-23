@@ -12,5 +12,8 @@ A collection of Jupyter Python notebooks related to machine learning, using eith
 * **keras-mnist-mlp**: MNIST classification with multi-layer perceptrons using Keras
 * **keras-mnist-cnn**: MNIST classification with convolutional neural networks using Keras
 * **keras-mnist-rnn**: MNIST classification with recurrent neural networks using Keras
+* **keras-imdb-mlp**: IMDB movie review sentiment classification with multi-layer perceptrons using Keras
+* **keras-imdb-cnn**: IMDB movie review sentiment classification with convolutional neural networks using Keras
+* **keras-imdb-rnn**: IMDB movie review sentiment classification with recurrent neural networks using Keras
 * **pytorch-test-setup**: testing the PyTorch setup
 * **pytorch-mnist-mlp**: MNIST classification with multi-layer perceptrons using PyTorch
