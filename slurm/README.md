@@ -2,7 +2,7 @@
 
 Simple SLURM scripts for running Python 3 programs on taito-gpu.csc.fi.  
 
-## Set up environment
+## Setting up the environment
 
 Set up the Taito-GPU module environment as:
 
