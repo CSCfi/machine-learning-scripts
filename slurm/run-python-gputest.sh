@@ -9,6 +9,6 @@ date
 hostname
 nvidia-smi
 
-srun python3.4 $*
+srun python3.5 $*
 
 date
