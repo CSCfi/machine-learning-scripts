@@ -9,7 +9,7 @@ Set up the Taito-GPU module environment as:
 	module purge
 	module load python-env/3.5.3-ml
 
-See [Mlpython](https://research.csc.fi/-/mlpython) for more information on the machine learning modules for Python.
+See [Mlpython](https://research.csc.fi/-/mlpython) for more information on the machine learning modules available for Python in Taito-GPU.
 
 ## Running the scripts
 
