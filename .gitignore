@@ -6,3 +6,4 @@ gen
 .gitignore
 .idea/
 .ipynb_checkpoints
+*.h5
