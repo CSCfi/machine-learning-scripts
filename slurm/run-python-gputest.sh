@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -N 1 -p gputest --gres=gpu:1 -t 15 --mem=2G
+#SBATCH -N 1 -p gputest --gres=gpu:k80:1 -t 15 --mem=2G
 
 module list
 
@@ -9,6 +9,6 @@ date
 hostname
 nvidia-smi
 
-srun python3.4 $*
+srun python3.5 $*
 
 date
