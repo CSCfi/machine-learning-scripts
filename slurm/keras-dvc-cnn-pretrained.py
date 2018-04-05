@@ -89,55 +89,6 @@ validation_generator = noopgen.flow_from_directory(
         class_mode='binary')
 
 
-# ## Option 1: Train a small CNN from scratch
-# 
-# Similarly as with MNIST digits, we can start from scratch and train a CNN for the classification task. However, due to the small number of training images, a large network will easily overfit, regardless of the data augmentation.
-# 
-# ### Initialization
-
-# In[ ]:
-
-
-model = Sequential()
-
-model.add(Conv2D(32, (3, 3), input_shape=input_image_size+(3,), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(32, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(64, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Flatten())
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(1, activation='sigmoid'))
-
-model.compile(loss='binary_crossentropy',
-              optimizer='rmsprop',
-              metrics=['accuracy'])
-
-print(model.summary())
-
-
-# ### Learning
-
-# In[ ]:
-
-
-epochs = 20
-
-history = model.fit_generator(train_generator,
-                              steps_per_epoch=nimages_train // batch_size,
-                              epochs=epochs,
-                              validation_data=validation_generator,
-                              validation_steps=nimages_validation // batch_size,
-                              verbose=2)
-
-model.save_weights("dvc-small-cnn.h5")
-
-
 # ## Option 2: Reuse a pre-trained CNN
 # 
 # Another option is to reuse a pretrained network.  Here we'll use the [VGG16](https://keras.io/applications/#vgg16) network architecture with weights learned using Imagenet.  We remove the top layers and freeze the pre-trained weights. 
@@ -158,7 +109,6 @@ for layer in vgg_model.layers:
 for layer in model.layers:
     layer.trainable = False
 
-print(model.summary())
 
 
 # We then stack our own, randomly initialized layers on top of the VGG16 network.
