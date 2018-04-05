@@ -135,7 +135,7 @@ history = model.fit_generator(train_generator,
                               validation_steps=nimages_validation // batch_size,
                               verbose=2)
 
-model.save_weights("dvc-small-cnn.h5")')
+model.save_weights("dvc-small-cnn.h5")
 
 
 # ## Option 2: Reuse a pre-trained CNN
@@ -226,4 +226,4 @@ history = model.fit_generator(train_generator,
                               validation_steps=nimages_validation // batch_size,
                               verbose=2)
 
-model.save_weights("dvc-vgg16-finetune.h5")')
+model.save_weights("dvc-vgg16-finetune.h5")
