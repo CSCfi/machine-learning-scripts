@@ -92,8 +92,8 @@ for batch, _ in orig_generator:
         plt.subplot(3,3,i+1)
         plt.imshow(batch[i,:,:,:])
         plt.suptitle('only resized training images', fontsize=16, y=0.93)
-    break
     plt.savefig("gtsrb-input-resized.png")
+    break
 
 for batch, _ in augm_generator:
     plt.figure(figsize=(10,10))
@@ -101,8 +101,8 @@ for batch, _ in augm_generator:
         plt.subplot(3,3,i+1)
         plt.imshow(batch[i,:,:,:])
         plt.suptitle('augmented training images', fontsize=16, y=0.93)
-    break
     plt.savefig("gtsrb-input-augmented.png")
+    break
 
 
 # ### Data loaders

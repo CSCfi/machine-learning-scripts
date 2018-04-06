@@ -43,7 +43,6 @@ assert(LV(__version__) >= LV("2.0.0"))
 
 # In[ ]:
 
-
 datapath = "/wrk/makoskel/gtsrb/train-5535"
 (nimages_train, nimages_validation) = (5535, 999)
 
@@ -92,8 +91,8 @@ for batch, _ in orig_generator:
         plt.subplot(3,3,i+1)
         plt.imshow(batch[i,:,:,:])
         plt.suptitle('only resized training images', fontsize=16, y=0.93)
-    break
     plt.savefig("gtsrb-input-resized.png")
+    break
 
 for batch, _ in augm_generator:
     plt.figure(figsize=(10,10))
@@ -101,8 +100,8 @@ for batch, _ in augm_generator:
         plt.subplot(3,3,i+1)
         plt.imshow(batch[i,:,:,:])
         plt.suptitle('augmented training images', fontsize=16, y=0.93)
-    break
     plt.savefig("gtsrb-input-augmented.png")
+    break
 
 
 # ### Data loaders
@@ -164,7 +163,7 @@ print(model.summary())
 
 
 epochs = 20
-nhistory = model.fit_generator(train_generator,
+history = model.fit_generator(train_generator,
                                steps_per_epoch=nimages_train // batch_size,
                                epochs=epochs,
                                validation_data=validation_generator,
