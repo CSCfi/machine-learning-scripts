@@ -26,6 +26,10 @@ from distutils.version import LooseVersion as LV
 from keras import __version__
 
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 print('Using Keras version:', __version__, 'backend:', K.backend())
 assert(LV(__version__) >= LV("2.0.0"))
@@ -66,6 +70,39 @@ datagen = ImageDataGenerator(
 
 noopgen = ImageDataGenerator(rescale=1./255)
 
+
+# Let's see a couple of training images with and without the augmentation.
+
+# In[ ]:
+
+
+orig_generator = noopgen.flow_from_directory(
+        datapath+'/train',  
+        target_size=input_image_size,  
+        batch_size=9)
+
+augm_generator = datagen.flow_from_directory(
+        datapath+'/train',  
+        target_size=input_image_size,  
+        batch_size=9)
+
+for batch, _ in orig_generator:
+    plt.figure(figsize=(10,10))
+    for i in range(9):
+        plt.subplot(3,3,i+1)
+        plt.imshow(batch[i,:,:,:])
+        plt.suptitle('only resized training images', fontsize=16, y=0.93)
+    plt.savefig("dvc-input-resized.png")
+    break
+
+for batch, _ in augm_generator:
+    plt.figure(figsize=(10,10))
+    for i in range(9):
+        plt.subplot(3,3,i+1)
+        plt.imshow(batch[i,:,:,:])
+        plt.suptitle('augmented training images', fontsize=16, y=0.93)
+    plt.savefig("dvc-input-augmented.png")
+    break
 
 # ### Data loaders
 # 
@@ -144,6 +181,22 @@ history = model.fit_generator(train_generator,
 
 model.save_weights("dvc-vgg16-reuse.h5")
 
+# In[ ]:
+
+
+plt.figure(figsize=(5,3))
+plt.plot(history.epoch,history.history['loss'], label='training')
+plt.plot(history.epoch,history.history['val_loss'], label='validation')
+plt.title('loss')
+plt.legend(loc='best')
+plt.savefig("dvc-vgg16-reuse-loss.png")
+
+plt.figure(figsize=(5,3))
+plt.plot(history.epoch,history.history['acc'], label='training')
+plt.plot(history.epoch,history.history['val_acc'], label='validation')
+plt.title('accuracy')
+plt.legend(loc='best');
+plt.savefig("dvc-vgg16-reuse-accuracy.png")
 
 
 # ### Fine-tuning
@@ -177,3 +230,20 @@ history = model.fit_generator(train_generator,
                               verbose=2)
 
 model.save_weights("dvc-vgg16-finetune.h5")
+
+# In[ ]:
+
+
+plt.figure(figsize=(5,3))
+plt.plot(history.epoch,history.history['loss'], label='training')
+plt.plot(history.epoch,history.history['val_loss'], label='validation')
+plt.title('loss')
+plt.legend(loc='best')
+plt.savefig("dvc-vgg16-finetune-loss.png")
+
+plt.figure(figsize=(5,3))
+plt.plot(history.epoch,history.history['acc'], label='training')
+plt.plot(history.epoch,history.history['val_acc'], label='validation')
+plt.title('accuracy')
+plt.legend(loc='best');
+plt.savefig("dvc-vgg16-finetune-accuracy.png")
