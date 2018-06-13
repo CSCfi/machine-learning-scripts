@@ -46,7 +46,7 @@ if K.backend() == "tensorflow":
     from keras.callbacks import TensorBoard
     import os, datetime
     logdir = os.path.join(os.getcwd(), "logs",
-                     "20ng-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+                     "20ng-cnn-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
     print('TensorBoard log directory:', logdir)
     os.makedirs(logdir)
     callbacks = [TensorBoard(log_dir=logdir)]
@@ -169,8 +169,6 @@ for word, i in word_index.items():
         
 print('Shape of embedding matrix:', embedding_matrix.shape)
 
-# ## 1-D CNN
-# 
 # ### Initialization
 
 print('Build model...')
@@ -189,47 +187,6 @@ model.add(Conv1D(128, 5, activation='relu'))
 model.add(MaxPooling1D(5))
 model.add(Conv1D(128, 5, activation='relu'))
 model.add(GlobalMaxPooling1D())
-
-model.add(Dense(128, activation='relu'))
-model.add(Dense(20, activation='softmax'))
-
-model.compile(loss='categorical_crossentropy',
-              optimizer='rmsprop',
-              metrics=['accuracy'])
-
-print(model.summary())
-
-# ### Learning
-
-epochs = 10
-batch_size=128
-
-history = model.fit(x_train, y_train,
-                    batch_size=batch_size,
-                    epochs=epochs,
-                    validation_data=(x_val, y_val),
-                    verbose=2, callbacks=callbacks)
-
-# ### Inference
-
-scores = model.evaluate(x_test, y_test, verbose=2)
-print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-
-# ## LSTM
-# 
-# ### Initialization
-
-print('Build model...')
-model = Sequential()
-
-model.add(Embedding(num_words,
-                    embedding_dim,
-                    weights=[embedding_matrix],
-                    input_length=MAX_SEQUENCE_LENGTH,
-                    trainable=False))
-#model.add(Dropout(0.2))
-
-model.add(CuDNNLSTM(128))
 
 model.add(Dense(128, activation='relu'))
 model.add(Dense(20, activation='softmax'))
