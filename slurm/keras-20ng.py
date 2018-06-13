@@ -54,6 +54,10 @@ else:
     callbacks =  None
 
 # ## GloVe word embeddings
+# 
+# Let's begin by loading a datafile containing pre-trained word
+# embeddings.  The datafile contains 100-dimensional embeddings for
+# 400,000 English words.
 
 GLOVE_DIR = "/wrk/makoskel/glove.6B"
 
@@ -68,10 +72,6 @@ with open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt')) as f:
         embeddings_index[word] = coefs
 
 print('Found %s word vectors.' % len(embeddings_index))
-
-print('Examples of embeddings:')
-for w in ['some', 'random', 'words']:
-    print(w, embeddings_index[w])
 
 # ## 20 Newsgroups data set
 # 
