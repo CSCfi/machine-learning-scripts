@@ -110,7 +110,10 @@ for i in root:
 
 print('Found %s talks.' % len(talks))
 
-nlabels_mean = None
+l = np.empty(len(talks))
+for i in range(len(talks)):
+    l[i]=np.sum(talks[i]["labels"])
+nlabels_mean = np.mean(l)
 
 # Let's take a look at *i*th talk:
 
