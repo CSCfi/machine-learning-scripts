@@ -3,14 +3,18 @@
 
 # # Dogs-vs-cats classification with CNNs
 # 
-# In this notebook, we'll train a convolutional neural network (CNN, ConvNet) to classify images of dogs from images of cats using Keras (version $\ge$ 2 is required). This notebook is largely based on the blog post [Building powerful image classification models using very little data](https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html) by François Chollet.
+# In this script, we'll train a convolutional neural network (CNN,
+# ConvNet) to classify images of dogs from images of cats using Keras
+# (version $\ge$ 2 is required). This script is largely based on the
+# blog post [Building powerful image classification models using very
+# little data]
+# (https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html)
+# by François Chollet.
 # 
-# **Note that using a GPU with this notebook is highly recommended.**
+# **Note that using a GPU with this script is highly recommended.**
 # 
-# First, the needed imports. Keras tells us which backend (Theano, Tensorflow, CNTK) it will be using.
-
-# In[ ]:
-
+# First, the needed imports. Keras tells us which backend (Theano,
+# Tensorflow, CNTK) it will be using.
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Flatten, MaxPooling2D
@@ -26,36 +30,44 @@ from distutils.version import LooseVersion as LV
 from keras import __version__
 
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 print('Using Keras version:', __version__, 'backend:', K.backend())
 assert(LV(__version__) >= LV("2.0.0"))
 
+# If we are using TensorFlow as the backend, we can use TensorBoard to
+# visualize our progress during training.
+
+if K.backend() == "tensorflow":
+    import tensorflow as tf
+    from keras.callbacks import TensorBoard
+    import os, datetime
+    logdir = os.path.join(os.getcwd(), "logs",
+                     "dvc-simple-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    print('TensorBoard log directory:', logdir)
+    os.makedirs(logdir)
+    callbacks = [TensorBoard(log_dir=logdir)]
+else:
+    callbacks =  None
 
 # ## Data
 # 
-# The training dataset consists of 2000 (or optionally 6000, 10000 or 24000) images of dogs and cats, split in half.  In addition, the validation set consists of 500 images of dogs and 500 images of cats.
-# 
-# ### Downloading the data
-
-# In[ ]:
-
+# The training dataset consists of 2000 images of dogs and cats, split
+# in half.  In addition, the validation set consists of 1000 images,
+# and the test set of 22000 images.
 
 datapath = "/wrk/makoskel/dogs-vs-cats/train-2000"
-(nimages_train, nimages_validation) = (2000, 1000)
-
+(nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
 
 # ### Data augmentation
 # 
 # First, we'll resize all training and validation images to a fized size. 
 # 
-# Then, to make the most of our limited number of training examples, we'll apply random transformations to them each time we are looping over them. This way, we "augment" our training dataset to contain more data. There are various transformations readily available in Keras, see [ImageDataGenerator](https://keras.io/preprocessing/image/) for more information.
-
-# In[ ]:
-
+# Then, to make the most of our limited number of training examples,
+# we'll apply random transformations to them each time we are looping
+# over them. This way, we "augment" our training dataset to contain
+# more data. There are various transformations readily available in
+# Keras, see [ImageDataGenerator]
+# (https://keras.io/preprocessing/image/) for more information.
 
 input_image_size = (150, 150)
 
@@ -70,70 +82,59 @@ datagen = ImageDataGenerator(
 
 noopgen = ImageDataGenerator(rescale=1./255)
 
-
-# Let's see a couple of training images with and without the augmentation.
-
-# In[ ]:
-
-
-orig_generator = noopgen.flow_from_directory(
-        datapath+'/train',  
-        target_size=input_image_size,  
-        batch_size=9)
+# Let's put a couple of training images with the augmentation to a
+# TensorBoard event file.
 
 augm_generator = datagen.flow_from_directory(
         datapath+'/train',  
         target_size=input_image_size,  
-        batch_size=9)
-
-for batch, _ in orig_generator:
-    plt.figure(figsize=(10,10))
-    for i in range(9):
-        plt.subplot(3,3,i+1)
-        plt.imshow(batch[i,:,:,:])
-        plt.suptitle('only resized training images', fontsize=16, y=0.93)
-    plt.savefig("dvc-input-resized.png")
-    break
+        batch_size=10)
 
 for batch, _ in augm_generator:
-    plt.figure(figsize=(10,10))
-    for i in range(9):
-        plt.subplot(3,3,i+1)
-        plt.imshow(batch[i,:,:,:])
-        plt.suptitle('augmented training images', fontsize=16, y=0.93)
-    plt.savefig("dvc-input-augmented.png")
     break
+
+if K.backend() == "tensorflow":
+    imgs = tf.convert_to_tensor(batch)
+    summary_op = tf.summary.image("augmented", imgs, max_outputs=9)
+    with tf.Session() as sess:
+        summary = sess.run(summary_op)
+        writer = tf.summary.FileWriter(logdir)
+        writer.add_summary(summary)
+        writer.close()
 
 # ### Data loaders
 # 
 # Let's now define our real data loaders for training and validation data.
 
-# In[ ]:
+batch_size = 25
 
-
-batch_size = 16
-
+print('Train: ', end="")
 train_generator = datagen.flow_from_directory(
         datapath+'/train',  
         target_size=input_image_size,
         batch_size=batch_size, 
         class_mode='binary')
 
+print('Validation: ', end="")
 validation_generator = noopgen.flow_from_directory(
         datapath+'/validation',  
         target_size=input_image_size,
         batch_size=batch_size,
         class_mode='binary')
 
+print('Test: ', end="")
+test_generator = noopgen.flow_from_directory(
+        datapath+'/test',  
+        target_size=input_image_size,
+        batch_size=batch_size,
+        class_mode='binary')
 
-# ## Option 1: Train a small CNN from scratch
-# 
-# Similarly as with MNIST digits, we can start from scratch and train a CNN for the classification task. However, due to the small number of training images, a large network will easily overfit, regardless of the data augmentation.
+# Similarly as with MNIST digits, we can start from scratch and train
+# a CNN for the classification task. However, due to the small number
+# of training images, a large network will easily overfit, regardless
+# of the data augmentation.
 # 
 # ### Initialization
-
-# In[ ]:
-
 
 model = Sequential()
 
@@ -157,11 +158,7 @@ model.compile(loss='binary_crossentropy',
 
 print(model.summary())
 
-
 # ### Learning
-
-# In[ ]:
-
 
 epochs = 20
 
@@ -170,23 +167,12 @@ history = model.fit_generator(train_generator,
                               epochs=epochs,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
-                              verbose=2)
+                              verbose=2, callbacks=callbacks)
 
-model.save_weights("dvc-small-cnn.h5")
+model.save("dvc-small-cnn.h5")
 
-# In[ ]:
+# ### Inference
 
-
-plt.figure(figsize=(5,3))
-plt.plot(history.epoch,history.history['loss'], label='training')
-plt.plot(history.epoch,history.history['val_loss'], label='validation')
-plt.title('loss')
-plt.legend(loc='best')
-plt.savefig("dvc-small-cnn-loss.png")
-
-plt.figure(figsize=(5,3))
-plt.plot(history.epoch,history.history['acc'], label='training')
-plt.plot(history.epoch,history.history['val_acc'], label='validation')
-plt.title('accuracy')
-plt.legend(loc='best');
-plt.savefig("dvc-small-cnn-accuracy.png")
+scores = model.evaluate_generator(test_generator,
+                                  steps=nimages_test // batch_size)
+print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
