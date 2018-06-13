@@ -95,7 +95,7 @@ for batch, _ in augm_generator:
 
 if K.backend() == "tensorflow":
     imgs = tf.convert_to_tensor(batch)
-    summary_op = tf.summary.image("augmented", imgs, max_outputs=9)
+    summary_op = tf.summary.image("augmented", imgs, max_outputs=10)
     with tf.Session() as sess:
         summary = sess.run(summary_op)
         writer = tf.summary.FileWriter(logdir)
