@@ -46,7 +46,7 @@ if K.backend() == "tensorflow":
     from keras.callbacks import TensorBoard
     import os, datetime
     logdir = os.path.join(os.getcwd(), "logs",
-                     "ted-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+                     "ted-cnn-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
     print('TensorBoard log directory:', logdir)
     os.makedirs(logdir)
     callbacks = [TensorBoard(log_dir=logdir)]
@@ -189,8 +189,6 @@ for word, i in word_index.items():
         
 print('Shape of embedding matrix:', embedding_matrix.shape)
 
-# ## 1-D CNN
-# 
 # ### Initialization
 
 print('Build model...')
@@ -253,85 +251,6 @@ for t in range(nb_talks_to_show):
     for idx in np.where(predictions[t]>threshold)[0].tolist():
         sys.stdout.write('['+inv_keywords[idx]+'] ')
     print()
-
-# Scikit-learn has some applicable performance [metrics]
-# (http://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics)
-# we can try:
-
-print('Precision: {0:.3f} (threshold: {1:.2f})'
-      .format(metrics.precision_score(y_val.flatten(), predictions.flatten()>threshold), threshold))
-print('Recall: {0:.3f} (threshold: {1:.2f})'
-      .format(metrics.recall_score(y_val.flatten(), predictions.flatten()>threshold), threshold))
-print('F1 score: {0:.3f} (threshold: {1:.2f})'
-      .format(metrics.f1_score(y_val.flatten(), predictions.flatten()>threshold), threshold))
-
-average_precision = metrics.average_precision_score(y_val.flatten(), predictions.flatten())
-print('Average precision: {0:.3f}'.format(average_precision))
-print('Coverage: {0:.3f}, optimal: {1:.3f}'
-      .format(metrics.coverage_error(y_val, predictions), nlabels_mean))
-print('LRAP: {0:.3f}'
-      .format(metrics.label_ranking_average_precision_score(y_val, predictions)))
-
-# ## LSTM
-# 
-# ### Initialization
-
-print('Build model...')
-model = Sequential()
-
-model.add(Embedding(num_words,
-                    embedding_dim,
-                    weights=[embedding_matrix],
-                    input_length=MAX_SEQUENCE_LENGTH,
-                    trainable=False))
-#model.add(Dropout(0.2))
-
-model.add(CuDNNLSTM(128))
-
-model.add(Dense(128, activation='relu'))
-model.add(Dense(10, activation='sigmoid'))
-
-model.compile(loss='binary_crossentropy',
-              optimizer='rmsprop')
-
-print(model.summary())
-
-# ### Learning
-
-epochs = 20
-batch_size=16
-
-history = model.fit(x_train, y_train,
-                    batch_size=batch_size,
-                    epochs=epochs,
-                    validation_data=(x_val, y_val),
-                    verbose=2, callbacks=callbacks)
-
-# ### Inference
-
-# To further analyze the results, we can produce the actual
-# predictions for the validation data.
-
-predictions = model.predict(x_val)
-
-# Let's look at the correct and predicted labels for some talks in the
-# validation set.
-
-threshold = 0.5
-nb_talks_to_show = 20
-
-inv_keywords = {v: k for k, v in keywords.items()}
-for t in range(nb_talks_to_show):
-    print(t,':')
-    print('    correct: ', end='')
-    for idx in np.where(y_val[t]>0.5)[0].tolist():
-        sys.stdout.write('['+inv_keywords[idx]+'] ')
-    print()
-    print('  predicted: ', end='')
-    for idx in np.where(predictions[t]>threshold)[0].tolist():
-        sys.stdout.write('['+inv_keywords[idx]+'] ')
-    print()
-
 
 # Scikit-learn has some applicable performance [metrics]
 # (http://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics)
