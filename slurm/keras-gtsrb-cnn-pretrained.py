@@ -3,14 +3,20 @@
 
 # # Traffic sign classification with CNNs
 # 
-# In this notebook, we'll train a convolutional neural network (CNN, ConvNet) to classify images of traffic signs from [The German Traffic Sign Recognition Benchmark](http://benchmark.ini.rub.de/?section=gtsrb&subsection=news) using Keras (version $\ge$ 2 is required). This notebook is largely based on the blog post [Building powerful image classification models using very little data](https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html) by François Chollet.
+# In this script, we'll train a convolutional neural network (CNN,
+# ConvNet) to classify images of traffic signs from [The German
+# Traffic Sign Recognition Benchmark]
+# (http://benchmark.ini.rub.de/?section=gtsrb&subsection=news) using
+# Keras (version $\ge$ 2 is required). This script is largely based on
+# the blog post [Building powerful image classification models using
+# very little data]
+# (https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html)
+# by François Chollet.
 # 
-# **Note that using a GPU with this notebook is highly recommended.**
+# **Note that using a GPU with this script is highly recommended.**
 # 
-# First, the needed imports. Keras tells us which backend (Theano, Tensorflow, CNTK) it will be using.
-
-# In[ ]:
-
+# First, the needed imports. Keras tells us which backend (Theano,
+# Tensorflow, CNTK) it will be using.
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Flatten, MaxPooling2D
@@ -26,36 +32,46 @@ from distutils.version import LooseVersion as LV
 from keras import __version__
 
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 print('Using Keras version:', __version__, 'backend:', K.backend())
 assert(LV(__version__) >= LV("2.0.0"))
 
+# If we are using TensorFlow as the backend, we can use TensorBoard to
+# visualize our progress during training.
+
+if K.backend() == "tensorflow":
+    import tensorflow as tf
+    from keras.callbacks import TensorBoard
+    import os, datetime
+    logdir = os.path.join(os.getcwd(), "logs",
+                     "gtsrb-pretrained-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    print('TensorBoard log directory:', logdir)
+    os.makedirs(logdir)
+    callbacks = [TensorBoard(log_dir=logdir)]
+else:
+    callbacks =  None
 
 # ## Data
 # 
-# The training dataset consists of 5535 images of traffic signs of varying size. There are 43 different types of traffic signs. The validation set consists of 999 images.
+# The training dataset consists of 5535 images of traffic signs of
+# varying size. There are 43 different types of traffic signs.
 # 
-# ### Downloading the data
-
-# In[ ]:
-
+# The validation and test sets consist of 999 and 12630 images,
+# respectively.
 
 datapath = "/wrk/makoskel/gtsrb/train-5535"
-(nimages_train, nimages_validation) = (5535, 999)
-
+(nimages_train, nimages_validation, nimages_test) = (5535, 999, 12630)
 
 # ### Data augmentation
 # 
 # First, we'll resize all training and validation images to a fized size. 
 # 
-# Then, to make the most of our limited number of training examples, we'll apply random transformations to them each time we are looping over them. This way, we "augment" our training dataset to contain more data. There are various transformations readily available in Keras, see [ImageDataGenerator](https://keras.io/preprocessing/image/) for more information.
-
-# In[ ]:
-
+# Then, to make the most of our limited number of training examples,
+# we'll apply random transformations to them each time we are looping
+# over them. This way, we "augment" our training dataset to contain
+# more data. There are various transformations readily available in
+# Keras, see [ImageDataGenerator]
+# (https://keras.io/preprocessing/image/) for more information.
 
 input_image_size = (75, 75)
 
@@ -70,69 +86,56 @@ datagen = ImageDataGenerator(
 
 noopgen = ImageDataGenerator(rescale=1./255)
 
-
-# Let's see a couple of training images with and without the augmentation.
-
-# In[ ]:
-
-
-orig_generator = noopgen.flow_from_directory(
-        datapath+'/train',  
-        target_size=input_image_size,  
-        batch_size=9)
+# Let's put a couple of training images with the augmentation to a
+# TensorBoard event file.
 
 augm_generator = datagen.flow_from_directory(
         datapath+'/train',  
         target_size=input_image_size,  
-        batch_size=9)
-
-for batch, _ in orig_generator:
-    plt.figure(figsize=(10,10))
-    for i in range(9):
-        plt.subplot(3,3,i+1)
-        plt.imshow(batch[i,:,:,:])
-        plt.suptitle('only resized training images', fontsize=16, y=0.93)
-    plt.savefig("gtsrb-input-resized.png")
-    break
+        batch_size=10)
 
 for batch, _ in augm_generator:
-    plt.figure(figsize=(10,10))
-    for i in range(9):
-        plt.subplot(3,3,i+1)
-        plt.imshow(batch[i,:,:,:])
-        plt.suptitle('augmented training images', fontsize=16, y=0.93)
-    plt.savefig("gtsrb-input-augmented.png")
     break
 
+if K.backend() == "tensorflow":
+    imgs = tf.convert_to_tensor(batch)
+    summary_op = tf.summary.image("augmented", imgs, max_outputs=10)
+    with tf.Session() as sess:
+        summary = sess.run(summary_op)
+        writer = tf.summary.FileWriter(logdir)
+        writer.add_summary(summary)
+        writer.close()
 
 # ### Data loaders
 # 
 # Let's now define our real data loaders for training and validation data.
 
-# In[ ]:
+batch_size = 50
 
-
-batch_size = 16
-
+print('Train: ', end="")
 train_generator = datagen.flow_from_directory(
         datapath+'/train',  
         target_size=input_image_size,
         batch_size=batch_size)
 
+print('Validation: ', end="")
 validation_generator = noopgen.flow_from_directory(
         datapath+'/validation',  
         target_size=input_image_size,
         batch_size=batch_size)
 
+print('Test: ', end="")
+test_generator = noopgen.flow_from_directory(
+        datapath+'/test',  
+        target_size=input_image_size,
+        batch_size=batch_size)
 
-# ## Option 2: Reuse a pre-trained CNN
-# 
-# Another option is to reuse a pretrained network.  Here we'll use the [VGG16](https://keras.io/applications/#vgg16) network architecture with weights learned using Imagenet.  We remove the top layers and freeze the pre-trained weights. 
+# We now reuse a pretrained network.  Here we'll use the
+# [VGG16](https://keras.io/applications/#vgg16) network architecture
+# with weights learned using Imagenet.  We remove the top layers and
+# freeze the pre-trained weights.
 # 
 # ### Initialization
-
-# In[ ]:
-
 
 model = Sequential()
 
@@ -145,11 +148,10 @@ for layer in vgg_model.layers:
 for layer in model.layers:
     layer.trainable = False
 
+print(model.summary())
 
-# We then stack our own, randomly initialized layers on top of the VGG16 network.
-
-# In[ ]:
-
+# We then stack our own, randomly initialized layers on top of the
+# VGG16 network.
 
 model.add(Flatten())
 model.add(Dense(256, activation='relu'))
@@ -162,45 +164,25 @@ model.compile(loss='categorical_crossentropy',
 
 print(model.summary())
 
-
-# ### Learning
-
-# In[ ]:
-
+# ### Learning 1: New layers
 
 epochs = 20
+
 history = model.fit_generator(train_generator,
                               steps_per_epoch=nimages_train // batch_size,
                               epochs=epochs,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
-                              verbose=2)
-model.save_weights("gtsrb-vgg16-reuse.h5")
+                              verbose=2, callbacks=callbacks)
 
+model.save("gtsrb-vgg16-reuse.h5")
 
-# In[ ]:
-
-
-plt.figure(figsize=(5,3))
-plt.plot(history.epoch,history.history['loss'], label='training')
-plt.plot(history.epoch,history.history['val_loss'], label='validation')
-plt.title('loss')
-plt.legend(loc='best')
-plt.savefig("gtsrb-vgg16-reuse-loss.png")
-
-plt.figure(figsize=(5,3))
-plt.plot(history.epoch,history.history['acc'], label='training')
-plt.plot(history.epoch,history.history['val_acc'], label='validation')
-plt.title('accuracy')
-plt.legend(loc='best');
-plt.savefig("gtsrb-vgg16-reuse-accuracy.png")
-
-# ### Fine-tuning
+# ### Learning 2: Fine-tuning
 # 
-# Once the top layers have learned some reasonable weights, we can continue training by unfreezing the last convolution block of VGG16 (`block5`) so that it may adapt to our data. The learning rate should be smaller than usual. 
-
-# In[ ]:
-
+# Once the top layers have learned some reasonable weights, we can
+# continue training by unfreezing the last convolution block of VGG16
+# (`block5`) so that it may adapt to our data. The learning rate
+# should be smaller than usual.
 
 for layer in model.layers[15:]:
     layer.trainable = True
@@ -212,34 +194,29 @@ model.compile(loss='categorical_crossentropy',
 
 print(model.summary())
 
-
-# In[ ]:
-
+# Note that before continuing the training, we create a separate
+# TensorBoard log directory:
 
 epochs = 20
+
+if K.backend() == "tensorflow":
+    logdir_ft = logdir + "-ft"
+    os.makedirs(logdir_ft)
+    callbacks_ft = [TensorBoard(log_dir=logdir_ft)]
+else:
+    callbacks_ft = None
+
 history = model.fit_generator(train_generator,
                               steps_per_epoch=nimages_train // batch_size,
                               epochs=epochs,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
-                              verbose=2)
-model.save_weights("gtsrb-vgg16-finetune.h5")
+                              verbose=2, callbacks=callbacks_ft)
 
+model.save("gtsrb-vgg16-finetune.h5")
 
-# In[ ]:
+# ### Inference
 
-
-plt.figure(figsize=(5,3))
-plt.plot(history.epoch,history.history['loss'], label='training')
-plt.plot(history.epoch,history.history['val_loss'], label='validation')
-plt.title('loss')
-plt.legend(loc='best')
-plt.savefig("gtsrb-vgg16-finetune-loss.png")
-
-plt.figure(figsize=(5,3))
-plt.plot(history.epoch,history.history['acc'], label='training')
-plt.plot(history.epoch,history.history['val_acc'], label='validation')
-plt.title('accuracy')
-plt.legend(loc='best');
-plt.savefig("gtsrb-vgg16-finetune-accuracy.png")
-
+scores = model.evaluate_generator(test_generator,
+                                  steps=nimages_test // batch_size)
+print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
