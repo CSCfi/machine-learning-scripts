@@ -26,6 +26,9 @@ from keras import applications, optimizers
 from keras.utils import np_utils
 from keras import backend as K
 
+from keras.utils import multi_gpu_model
+NCPUS, NGPUS = 8, 2
+
 from distutils.version import LooseVersion as LV
 from keras import __version__
 
@@ -106,7 +109,7 @@ if K.backend() == "tensorflow":
 # 
 # Let's now define our real data loaders for training and validation data.
 
-batch_size = 25
+batch_size = NGPUS*25
 
 print('Train: ', end="")
 train_generator = datagen.flow_from_directory(
@@ -136,21 +139,25 @@ test_generator = noopgen.flow_from_directory(
 # 
 # ### Initialization
 
-model = Sequential()
+with tf.device('/cpu:0'):
 
-model.add(Conv2D(32, (3, 3), input_shape=input_image_size+(3,), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+    _model = Sequential()
 
-model.add(Conv2D(32, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+    _model.add(Conv2D(32, (3, 3), input_shape=input_image_size+(3,), activation='relu'))
+    _model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Conv2D(64, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+    _model.add(Conv2D(32, (3, 3), activation='relu'))
+    _model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Flatten())
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(1, activation='sigmoid'))
+    _model.add(Conv2D(64, (3, 3), activation='relu'))
+    _model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    _model.add(Flatten())
+    _model.add(Dense(64, activation='relu'))
+    _model.add(Dropout(0.5))
+    _model.add(Dense(1, activation='sigmoid'))
+
+model = multi_gpu_model(_model, gpus=NGPUS)
 
 model.compile(loss='binary_crossentropy',
               optimizer='rmsprop',
@@ -168,9 +175,9 @@ history = model.fit_generator(train_generator,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
                               verbose=2, callbacks=callbacks,
-                              use_multiprocessing=True, workers=4)
+                              use_multiprocessing=True, workers=NCPUS)
 
-model.save("dvc-small-cnn.h5")
+#model.save("dvc-small-cnn.h5")
 
 # ### Inference
 
