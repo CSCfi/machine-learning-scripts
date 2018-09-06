@@ -1,10 +1,12 @@
 # IntelliJ project files
 .idea
 *.iml
-out
+*.out
 gen
 .gitignore
 .idea/
 .ipynb_checkpoints
 *.h5
 slurm/*.png
+*~
+logs/
