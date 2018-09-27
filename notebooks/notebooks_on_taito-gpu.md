@@ -15,11 +15,11 @@ overlaps.  You are free to select a suitable port from the range 1024-49151.
 
 Further instructions on setting up TensorFlow in Taito-GPU can be found at https://research.csc.fi/-/tensorflow . More information about Mlpython (machine learning for Python) environments can be found at https://research.csc.fi/-/mlpython .
 
-The `srun` command reserves a gpu and opens a shell on one of the compute nodes.  The
+The following `srun` command reserves CPUs and GPUs and opens a shell on one of the compute nodes.  The
 option `-t` sets the time limit in the format `HH:MM:SS`, the option `--mem` sets the memory 
-reservation, and `--gres=gpu:p100:X` reserves `X` (Pascal P100) GPUs (1<=`X`<=4).
+reservation, `--gres=gpu:p100:X` reserves `X` (Pascal P100) GPUs (1<=`X`<=4), and `-c Y` reserves `Y` CPU cores.
 
-    srun -p gpu --gres=gpu:p100:1 -t 04:00:00 --mem=8G --pty $SHELL
+    srun -p gpu --gres=gpu:p100:1 -c 4 -t 04:00:00 --mem=8G --pty $SHELL
     hostname  # you need this information later
     .local/bin/jupyter-notebook --no-browser --port=8899
 
