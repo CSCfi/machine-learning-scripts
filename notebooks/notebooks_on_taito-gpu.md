@@ -11,21 +11,15 @@ overlaps.  You are free to select a suitable port from the range 1024-49151.
     ssh -l USERNAME taito-gpu.csc.fi
 
     module purge
-    module load python-env/3.4.5 cuda/8.0.61 cudnn/6.0
+    module load python-env/3.5.3-ml
 
-Run the following commands only once, that is, when setting up the environment
-for the first time:
-
-    pip3 install --user /appl/opt/tensorflow/1.3.0/tensorflow-1.3.0-cp34-cp34m-linux_x86_64.whl
-    pip3 install --user keras notebook
-
-Further instructions on setting up TensorFlow in Taito-GPU can be found at https://research.csc.fi/-/tensorflow .
+Further instructions on setting up TensorFlow in Taito-GPU can be found at https://research.csc.fi/-/tensorflow . More information about Mlpython (machine learning for Python) environments can be found at https://research.csc.fi/-/mlpython .
 
 The `srun` command reserves a gpu and opens a shell on one of the compute nodes.  The
 option `-t` sets the time limit in the format `HH:MM:SS`, the option `--mem` sets the memory 
-reservation, and `--gres=gpu:X` reserves `X` GPUs (1<=`X`<=4).
+reservation, and `--gres=gpu:p100:X` reserves `X` (Pascal P100) GPUs (1<=`X`<=4).
 
-    srun -p gpu --gres=gpu:1 -t 04:00:00 --mem=8G --pty $SHELL
+    srun -p gpu --gres=gpu:p100:1 -t 04:00:00 --mem=8G --pty $SHELL
     hostname  # you need this information later
     .local/bin/jupyter-notebook --no-browser --port=8899
 
