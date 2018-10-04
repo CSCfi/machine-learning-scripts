@@ -172,7 +172,8 @@ history = model.fit_generator(train_generator,
                               epochs=epochs,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
-                              verbose=2, callbacks=callbacks)
+                              verbose=2, callbacks=callbacks,
+                              use_multiprocessing=True, workers=4)
 
 model.save("dvc-vgg16-reuse.h5")
 
@@ -210,7 +211,8 @@ history = model.fit_generator(train_generator,
                               epochs=epochs,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
-                              verbose=2, callbacks=callbacks_ft)
+                              verbose=2, callbacks=callbacks_ft,
+                              use_multiprocessing=True, workers=4)
 
 model.save("dvc-vgg16-finetune.h5")
 
