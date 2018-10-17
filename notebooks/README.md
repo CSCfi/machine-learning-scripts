@@ -15,5 +15,12 @@ A collection of Jupyter Python notebooks related to machine learning, using eith
 * **keras-imdb-mlp**: IMDB movie review sentiment classification with multi-layer perceptrons using Keras
 * **keras-imdb-cnn**: IMDB movie review sentiment classification with convolutional neural networks using Keras
 * **keras-imdb-rnn**: IMDB movie review sentiment classification with recurrent neural networks using Keras
+* **keras-dvc-cnn**: Dogs vs. cats image classification with convolutional neural networks using Keras
+* **keras-avp-cnn**: Alien vs. Predator image classification with convolutional neural networks using Keras
+* **keras-gtsrb-cnn**: German Traffic Sign Recognition Benchmark image classification with convolutional neural networks using Keras
+* **keras-20ng**: 20 Newsgroups text classification using Keras
+* **keras-ted**: TED Talks keyword labeling using Keras (old dataset) 
+* **keras-ted-kaggle**: TED Talks keyword labeling using Keras (new, Kaggle 2017 dataset)
+* **keras-titles-rnn**: Book and movie title generation with recurrent neural networks using Keras 
 * **pytorch-test-setup**: testing the PyTorch setup
 * **pytorch-mnist-mlp**: MNIST classification with multi-layer perceptrons using PyTorch
