@@ -24,7 +24,7 @@ reservation, `--gres=gpu:p100:X` reserves `X` (Pascal P100) GPUs (1<=`X`<=4), an
 
     srun -p gpu --gres=gpu:p100:1 -c 4 -t 04:00:00 --mem=8G --pty $SHELL
     hostname  # you need this information later
-    .local/bin/jupyter-notebook --no-browser --port=8899
+    jupyter-notebook --no-browser --port=8899
 
 ## Second terminal window (for SSH port forwarding):
 
