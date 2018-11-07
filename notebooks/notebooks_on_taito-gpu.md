@@ -1,6 +1,6 @@
 # Using Jupyter notebooks on Taito-GPU
 
-This page contains instructions on setting up a Jupyter notebooks server with GPU support in Taito-GPU. It can be used e.g. to run GPU-enabled TensorFlow, Keras, or PyTorch scripts.
+This page contains instructions on setting up a Jupyter notebooks server with GPU support in Taito-GPU. It can be used e.g. to run GPU-enabled TensorFlow, Keras, or PyTorch notebooks.
 
 Please note that this is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.
 
