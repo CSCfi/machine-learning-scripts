@@ -1,7 +1,8 @@
 # Using Jupyter notebooks on Taito-GPU
 
-Instructions on setting up a Jupyter notebooks server with TensorFlow, Keras, and GPU support in Taito-GPU.
-This is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.
+This page contains instructions on setting up a Jupyter notebooks server with GPU support in Taito-GPU. It can be used e.g. to run GPU-enabled TensorFlow, Keras, or PyTorch notebooks.
+
+Please note that this is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.
 
 In this example, we use 8899 as the port number, but please select a unique port to avoid 
 overlaps.  You are free to select a suitable port from the range 1024-49151. 
@@ -10,8 +11,15 @@ overlaps.  You are free to select a suitable port from the range 1024-49151.
 
     ssh -l USERNAME taito-gpu.csc.fi
 
+Set up a suitable module environment, for example:
+
     module purge
     module load python-env/3.5.3-ml
+
+or
+
+    module purge
+    module load python-env/intelpython3.6-2018.3 gcc/5.4.0 cuda/9.0 cudnn/7.1-cuda9
 
 Further instructions on setting up TensorFlow in Taito-GPU can be found at https://research.csc.fi/-/tensorflow . More information about Mlpython (machine learning for Python) environments can be found at https://research.csc.fi/-/mlpython .
 
@@ -21,7 +29,7 @@ reservation, `--gres=gpu:p100:X` reserves `X` (Pascal P100) GPUs (1<=`X`<=4), an
 
     srun -p gpu --gres=gpu:p100:1 -c 4 -t 04:00:00 --mem=8G --pty $SHELL
     hostname  # you need this information later
-    .local/bin/jupyter-notebook --no-browser --port=8899
+    jupyter-notebook --no-browser --port=8899
 
 ## Second terminal window (for SSH port forwarding):
 
