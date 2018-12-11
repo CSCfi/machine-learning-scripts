@@ -15,8 +15,10 @@
 # First, the needed imports. Keras tells us which backend (Theano,
 # Tensorflow, CNTK) it will be using.
 import argparse
+import json
 import os
 
+from keras.callbacks import LambdaCallback
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Flatten, MaxPooling2D
 from keras.layers.convolutional import Conv2D
@@ -161,6 +163,16 @@ def main(settings):
 
     print(model.summary())
 
+    json_logging_callback = LambdaCallback(
+        on_epoch_end=lambda epoch, logs: print(json.dumps({
+            "epoch": epoch,
+            "loss": logs["loss"],
+            "acc": logs["acc"],
+            "val_loss": logs["val_loss"],
+            "val_acc": logs["val_acc"],
+        })),
+    )
+
     # ### Learning
 
     history = model.fit_generator(train_generator,
@@ -169,6 +181,7 @@ def main(settings):
                                   validation_data=validation_generator,
                                   validation_steps=nimages_validation // batch_size,
                                   verbose=2,
+                                  callbacks=[json_logging_callback],
                                   use_multiprocessing=True,
                                   workers=4)
 
