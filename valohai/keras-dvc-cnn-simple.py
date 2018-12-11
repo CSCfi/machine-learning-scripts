@@ -52,16 +52,13 @@ def main(settings):
     # else:
     #     callbacks =  None
 
-    callbacks = None
-
     # ## Data
     #
     # The training dataset consists of 2000 images of dogs and cats, split
     # in half.  In addition, the validation set consists of 1000 images,
     # and the test set of 22000 images.
 
-    dataset_root = os.path.join(settings.inputs_dir, 'dataset')
-    datapath = os.path.join(dataset_root, "/dogs-vs-cats/train-2000")
+    datapath = '/valohai/inputs/dataset/dogs-vs-cats/train-2000'
     (nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
 
     # ### Data augmentation
@@ -166,29 +163,31 @@ def main(settings):
 
     # ### Learning
 
-    epochs = 20
-
     history = model.fit_generator(train_generator,
                                   steps_per_epoch=nimages_train // batch_size,
-                                  epochs=epochs,
+                                  epochs=settings.epochs,
                                   validation_data=validation_generator,
                                   validation_steps=nimages_validation // batch_size,
-                                  verbose=2, callbacks=callbacks,
-                                  use_multiprocessing=True, workers=4)
+                                  verbose=2,
+                                  use_multiprocessing=True,
+                                  workers=4)
 
-    model.save(os.path.join(settings.outputs_dir, "dvc-small-cnn.h5"))
+    model.save('/valohai/outputs/dvc-small-cnn.h5')
 
     # ### Inference
 
-    print('Evaluating model...')
-    scores = model.evaluate_generator(test_generator,
-                                      steps=nimages_test // batch_size,
-                                      use_multiprocessing=True, workers=4)
-    print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
+    if settings.inference:
+        print('Evaluating model...')
+        scores = model.evaluate_generator(test_generator,
+                                          steps=nimages_test // batch_size,
+                                          use_multiprocessing=True,
+                                          workers=4)
+        print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--inputs_dir', type=str, default=os.getenv('VH_INPUTS_DIR', './inputs'))
-    parser.add_argument('--outputs_dir', type=str, default=os.getenv('VH_OUTPUTS_DIR', './outputs'))
+    parser.add_argument('--epochs', type=int, default=20)
+    parser.add_argument('--inference', type=int, default=0)
     settings = parser.parse_args()
     main(settings)
