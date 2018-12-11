@@ -13,3 +13,12 @@
       - nvidia-smi
       - nvcc --version | grep release
       - cat /usr/include/x86_64-linux-gnu/cudnn_v*.h | grep CUDNN_MAJOR -A 2
+
+- step:
+    name: keras-dvc-cnn-simple
+    image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
+    command:
+      - tar -xvf /valohai/inputs/dataset/*.tar -C /valohai/inputs/dataset/
+      - python valohai/keras-dvc-cnn-simple.py
+    inputs:
+      - name: dataset
