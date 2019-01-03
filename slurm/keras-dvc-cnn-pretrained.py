@@ -18,6 +18,7 @@
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Flatten, MaxPooling2D
+from keras.layers import InputLayer
 from keras.layers.convolutional import Conv2D 
 from keras.preprocessing.image import (ImageDataGenerator, array_to_img, 
                                       img_to_array, load_img)
@@ -137,6 +138,7 @@ test_generator = noopgen.flow_from_directory(
 # ### Initialization
 
 model = Sequential()
+model.add(InputLayer(input_shape=input_image_size+(3,))) # possibly needed due to a bug in Keras
 
 vgg_model = applications.VGG16(weights='imagenet', 
                                include_top=False, 
@@ -165,7 +167,12 @@ print(model.summary())
 
 # ### Learning 1: New layers
 
-epochs = 20
+epochs = 10
+workers = 8
+use_multiprocessing = False
+
+print('Training for', epochs, 'epochs with', workers,
+      'workers, use_multiprocessing is', use_multiprocessing)
 
 history = model.fit_generator(train_generator,
                               steps_per_epoch=nimages_train // batch_size,
@@ -173,9 +180,12 @@ history = model.fit_generator(train_generator,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
                               verbose=2, callbacks=callbacks,
-                              use_multiprocessing=True, workers=4)
+                              use_multiprocessing=use_multiprocessing,
+                              workers=workers)
 
-model.save("dvc-vgg16-reuse.h5")
+fname = "dvc-vgg16-reuse.h5"
+print('Saving model to', fname)
+model.save(fname)
 
 # ### Learning 2: Fine-tuning
 # 
@@ -197,7 +207,7 @@ print(model.summary())
 # Note that before continuing the training, we create a separate
 # TensorBoard log directory:
 
-epochs = 20
+epochs_ft = 10
 
 if K.backend() == "tensorflow":
     logdir_ft = logdir + "-ft"
@@ -206,20 +216,18 @@ if K.backend() == "tensorflow":
 else:
     callbacks_ft = None
 
+print('Finetuning for', epochs_ft, 'epochs with', workers,
+      'workers, use_multiprocessing is', use_multiprocessing)
+
 history = model.fit_generator(train_generator,
                               steps_per_epoch=nimages_train // batch_size,
-                              epochs=epochs,
+                              epochs=epochs_ft,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
                               verbose=2, callbacks=callbacks_ft,
-                              use_multiprocessing=True, workers=4)
+                              use_multiprocessing=use_multiprocessing,
+                              workers=workers)
 
-model.save("dvc-vgg16-finetune.h5")
-
-# ### Inference
-
-print('Evaluating model...')
-scores = model.evaluate_generator(test_generator,
-                                  steps=nimages_test // batch_size,
-                                  use_multiprocessing=True, workers=4)
-print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+fname_ft = "dvc-vgg16-finetune.h5"
+print('Saving finetuned model to', fname_ft)
+model.save(fname_ft)

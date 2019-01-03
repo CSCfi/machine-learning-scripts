@@ -160,7 +160,12 @@ print(model.summary())
 
 # ### Learning
 
-epochs = 20
+epochs = 10
+workers = 14
+use_multiprocessing = True
+
+print('Training for', epochs, 'epochs with', workers,
+      'workers, use_multiprocessing is', use_multiprocessing)
 
 history = model.fit_generator(train_generator,
                               steps_per_epoch=nimages_train // batch_size,
@@ -168,14 +173,9 @@ history = model.fit_generator(train_generator,
                               validation_data=validation_generator,
                               validation_steps=nimages_validation // batch_size,
                               verbose=2, callbacks=callbacks,
-                              use_multiprocessing=True, workers=4)
+                              use_multiprocessing=use_multiprocessing,
+                              workers=workers)
 
-model.save("dvc-small-cnn.h5")
-
-# ### Inference
-
-print('Evaluating model...')
-scores = model.evaluate_generator(test_generator,
-                                  steps=nimages_test // batch_size,
-                                  use_multiprocessing=True, workers=4)
-print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+fname = "dvc-small-cnn.h5"
+print('Saving model to', fname)
+model.save(fname)
