@@ -13,10 +13,13 @@ See [Mlpython](https://research.csc.fi/-/mlpython) for more information on the m
 
 ## Running the scripts
 
-Usage: `sbatch SHELL-FILE PYTHON-FILE`, e.g. `sbatch run-python-gputest.sh tensorflow-test.py`.
+Usage: `sbatch SHELL-FILE PYTHON-FILE`, e.g. `sbatch run-python-gputest.sh ../examples/tensorflow-test.py`.
 
 * **run-python-gputest.sh**: SLURM script for running test programs in *gputest* queue
 * **run-python-gpu-1h.sh**: SLURM script for running single-gpu programs in *gpu* queue for maximum duration of 1 hour 
+
+The top-level folder `examples` contains some example scripts that can be used:
+
 * **tensorflow-test.py**: Test program for TensorFlow
 * **keras-test.py**: Test program for Keras
 * **keras-mnist_cnn.py**: Classify MNIST digits with a convolutional neural network
