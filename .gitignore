@@ -3,7 +3,6 @@
 *.iml
 *.out
 gen
-.gitignore
 .idea/
 .ipynb_checkpoints
 *.h5
