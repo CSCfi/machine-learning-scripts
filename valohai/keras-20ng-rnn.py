@@ -188,6 +188,16 @@ def main(settings):
     epochs = settings.epochs
     batch_size=128
 
+    json_logging_callback = LambdaCallback(
+        on_epoch_end=lambda epoch, logs: print(json.dumps({
+            "epoch": epoch,
+            "loss": logs["loss"],
+            "acc": logs["acc"],
+            "val_loss": logs["val_loss"],
+            "val_acc": logs["val_acc"],
+        })),
+    )
+
     history = model.fit(x_train, y_train,
                         batch_size=batch_size,
                         epochs=epochs,
