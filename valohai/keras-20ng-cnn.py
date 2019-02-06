@@ -50,8 +50,8 @@ def main(settings):
     # embeddings.  The datafile contains 100-dimensional embeddings for
     # 400,000 English words.
 
-    !wget -nc https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/glove6b100dtxt.zip
-    !unzip -u glove6b100dtxt.zip
+    os.system("wget -nc https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/glove6b100dtxt.zip")
+    os.system("unzip -u glove6b100dtxt.zip")
     GLOVE_DIR = "."
 
     print('Indexing word vectors.')
@@ -81,8 +81,8 @@ def main(settings):
     # talk.politics.misc    | comp.os.ms-windows.misc  | rec.sport.baseball | sci.med
     # talk.religion.misc    | comp.sys.mac.hardware    | rec.sport.hockey   | misc.forsale
 
-    !wget -nc https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/news20.tar.gz
-    !tar -x --skip-old-files -f news20.tar.gz
+    os.system("wget -nc https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/news20.tar.gz")
+    os.system("tar -x --skip-old-files -f news20.tar.gz")
     TEXT_DATA_DIR = "./20_newsgroup"
 
     print('Processing text dataset')
