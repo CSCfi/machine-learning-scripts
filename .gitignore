@@ -9,3 +9,6 @@ gen
 slurm/*.png
 *~
 logs/
+/notebooks/data/
+/notebooks/dvc-vgg16-finetune.pt
+/notebooks/dvc-vgg16-reuse.pt
