@@ -36,9 +36,6 @@
     name: keras-20ng-cnn
     image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
     command:
-      - pwd
-      - ls
-      - ls /
       - python valohai/keras-20ng-cnn.py {parameters}
     parameters:
       - name: epochs
