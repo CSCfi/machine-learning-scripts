@@ -192,7 +192,7 @@ def main(settings):
                         batch_size=batch_size,
                         epochs=epochs,
                         validation_data=(x_val, y_val),
-                        verbose=2, callbacks=callbacks)
+                        verbose=2, callbacks=[json_logging_callback])
 
     model.save('/valohai/outputs/20ng-rnn.h5')
 
