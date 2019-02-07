@@ -12,8 +12,8 @@ from datetime import datetime
 from pytorch_dvc_cnn import get_train_loader, get_validation_loader, get_test_loader
 from pytorch_dvc_cnn import device, train, evaluate, get_tensorboard
 
-model_file = 'dvc_pretrained_cnn.pt'
-model_file_ft = 'dvc_pretrained_finetune.pt'
+model_file = 'dvc_pretrained_cnn_multigpu.pt'
+model_file_ft = 'dvc_pretrained_cnn_finetune_multigpu.pt'
 
 
 # Option 2: Reuse a pre-trained CNN
@@ -43,13 +43,20 @@ class PretrainedNet(nn.Module):
 def train_main():
     # Learning 1: New layers
 
-    model = PretrainedNet().to(device)
+    model = PretrainedNet()
+
+    num_gpus = torch.cuda.device_count()
+    if num_gpus > 1:
+        print('Using multi-gpu with {} GPUs!'.format(num_gpus))
+        model = nn.DataParallel(model)
+    model.to(device)
+
     optimizer = optim.SGD(model.parameters(), lr=0.01)
     criterion = nn.BCELoss()
 
     print(model)
 
-    batch_size = 25
+    batch_size = 25 * num_gpus
     train_loader = get_train_loader(batch_size)
     validation_loader = get_validation_loader(batch_size)
 
@@ -67,13 +74,13 @@ def train_main():
     end_time = datetime.now()
     print('Total training time: {}.'.format(end_time - start_time))
 
-    torch.save(model.state_dict(), model_file)
+    torch.save(model.module.state_dict(), model_file)
     print('Wrote model to', model_file)
 
     # Learning 2: Fine-tuning
     log = get_tensorboard('finetuned')
 
-    for name, layer in model.vgg_features.named_children():
+    for name, layer in model.module.vgg_features.named_children():
         note = ' '
         for param in layer.parameters():
             note = '-'
@@ -103,7 +110,7 @@ def train_main():
     end_time = datetime.now()
     print('Total training time: {}.'.format(end_time - start_time))
 
-    torch.save(model.state_dict(), model_file_ft)
+    torch.save(model.module.state_dict(), model_file_ft)
     print('Wrote finetuned model to', model_file_ft)
 
 

@@ -24,6 +24,9 @@ else:
 print('Using PyTorch version:', torch.__version__, ' Device:', device)
 assert(LV(torch.__version__) >= LV("1.0.0"))
 
+datapath = "/media/data/dogs-vs-cats/train-2000"
+(nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
+
 
 def get_tensorboard(log_name):
     try:
@@ -104,24 +107,6 @@ def evaluate(model, loader, criterion=None, epoch=None, log=None):
         log.add_scalar('val_acc', accuracy, epoch-1)
 
 
-# The training dataset consists of 2000 images of dogs and cats, split
-# in half. In addition, the validation set consists of 1000 images,
-# and the test set of 22000 images.
-
-datapath = "/media/data/dogs-vs-cats/train-2000"
-(nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
-
-
-# First, we'll resize all training and validation images to a fixed size.
-#
-# Then, to make the most of our limited number of training examples,
-# we'll apply random transformations to them each time we are looping
-# over them. This way, we "augment" our training dataset to contain
-# more data. There are various transformations available in
-# `torchvision`, see
-# [torchvision.transforms](https://pytorch.org/docs/stable/torchvision/transforms.html)
-# for more information.
-
 input_image_size = (150, 150)
 
 data_transform = transforms.Compose([
@@ -137,45 +122,34 @@ noop_transform = transforms.Compose([
         transforms.ToTensor()
     ])
 
-# Let's put a couple of training images with the augmentation to a
-# TensorBoard event file.
 
-# augm_dataset = datasets.ImageFolder(root=datapath+'/train',
-#                                      transform=data_transform)
-# augm_loader = DataLoader(augm_dataset, batch_size=9,
-#                          shuffle=False, num_workers=0)
-
-# batch, _ = next(iter(augm_loader))
-# batch = batch.numpy().transpose((0, 2, 3, 1))
-
-# if log is not None:
-#     log.add_images('augmented', batch, dataformats='NHWC')
+def get_train_loader(batch_size=25):
+    print('Train: ', end="")
+    train_dataset = datasets.ImageFolder(root=datapath+'/train',
+                                         transform=data_transform)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size,
+                              shuffle=True, num_workers=4)
+    print('Found', len(train_dataset), 'images belonging to',
+          len(train_dataset.classes), 'classes')
+    return train_loader
 
 
-# Let's now define our real data loaders for training and validation data.
+def get_validation_loader(batch_size=25):
+    print('Validation: ', end="")
+    validation_dataset = datasets.ImageFolder(root=datapath+'/validation',
+                                              transform=noop_transform)
+    validation_loader = DataLoader(validation_dataset, batch_size=batch_size,
+                                   shuffle=False, num_workers=4)
+    print('Found', len(validation_dataset), 'images belonging to',
+          len(validation_dataset.classes), 'classes')
+    return validation_loader
 
-batch_size = 25
-
-print('Train: ', end="")
-train_dataset = datasets.ImageFolder(root=datapath+'/train',
-                                     transform=data_transform)
-train_loader = DataLoader(train_dataset, batch_size=batch_size,
-                          shuffle=True, num_workers=4)
-print('Found', len(train_dataset), 'images belonging to',
-      len(train_dataset.classes), 'classes')
-
-print('Validation: ', end="")
-validation_dataset = datasets.ImageFolder(root=datapath+'/validation',
-                                          transform=noop_transform)
-validation_loader = DataLoader(validation_dataset, batch_size=batch_size,
-                               shuffle=False, num_workers=4)
-print('Found', len(validation_dataset), 'images belonging to',
-      len(validation_dataset.classes), 'classes')
-
-print('Test: ', end="")
-test_dataset = datasets.ImageFolder(root=datapath+'/test',
-                                    transform=noop_transform)
-test_loader = DataLoader(test_dataset, batch_size=batch_size,
-                         shuffle=False, num_workers=4)
-print('Found', len(test_dataset), 'images belonging to',
-      len(test_dataset.classes), 'classes')
+def get_test_loader(batch_size=25):
+    print('Test: ', end="")
+    test_dataset = datasets.ImageFolder(root=datapath+'/test',
+                                        transform=noop_transform)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size,
+                             shuffle=False, num_workers=4)
+    print('Found', len(test_dataset), 'images belonging to',
+          len(test_dataset.classes), 'classes')
+    return test_loader
