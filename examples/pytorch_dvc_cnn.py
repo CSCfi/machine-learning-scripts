@@ -25,11 +25,17 @@ else:
 print('Using PyTorch version:', torch.__version__, ' Device:', device)
 assert(LV(torch.__version__) >= LV("1.0.0"))
 
-datapath = os.path.join(os.environ['TMPDIR'], os.environ['SLURM_JOB_ID'],
-                        'dogs-vs-cats/train-2000')
+datapath = None
+subpath = 'dogs-vs-cats/train-2000'
+
+slurm_job_id = os.environ.get('SLURM_JOB_ID')
+if slurm_job_id is not None:
+    datapath = os.path.join(os.environ.get('TMPDIR'), os.environ.get('SLURM_JOB_ID'),
+                            subpath)
+if datapath is None or not os.path.isdir(datapath):
+    datapath = '/wrk/makoskel/' + subpath
 if not os.path.isdir(datapath):
-    # datapath = "/media/data/dogs-vs-cats/train-2000"
-    datapath = "/wrk/makoskel/dogs-vs-cats/train-2000"
+    datapath = '/media/data/' + subpath
 
 print('Reading data from path:', datapath)
 
