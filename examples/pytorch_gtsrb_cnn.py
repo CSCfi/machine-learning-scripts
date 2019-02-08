@@ -25,7 +25,14 @@ else:
 print('Using PyTorch version:', torch.__version__, ' Device:', device)
 assert(LV(torch.__version__) >= LV("1.0.0"))
 
-datapath = "/media/data/gtsrb/train-5535"
+datapath = os.path.join(os.environ['TMPDIR'], os.environ['SLURM_JOB_ID'],
+                        'gtsrb/train-5535')
+if not os.path.isdir(datapath):
+    # datapath = "/media/data/gtsrb/train-5535"
+    datapath = "/wrk/makoskel/gtsrb/train-5535"
+
+print('Reading data from path:', datapath)
+
 (nimages_train, nimages_validation, nimages_test) = (5535, 999, 12630)
 
 
