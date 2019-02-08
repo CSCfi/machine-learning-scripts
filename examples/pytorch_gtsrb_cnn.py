@@ -16,6 +16,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from distutils.version import LooseVersion as LV
+import os
 
 torch.manual_seed(42)
 if torch.cuda.is_available():
