@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Dogs-vs-cats classification with CNNs
+# Traffic sign classification with CNNs
 
 import torch
 import torch.nn as nn
@@ -9,11 +9,11 @@ import torch.optim as optim
 from torchvision import models
 from datetime import datetime
 
-from pytorch_dvc_cnn import get_train_loader, get_validation_loader, get_test_loader
-from pytorch_dvc_cnn import device, train, evaluate, get_tensorboard
+from pytorch_gtsrb_cnn import get_train_loader, get_validation_loader, get_test_loader
+from pytorch_gtsrb_cnn import device, train, evaluate, get_tensorboard
 
-model_file = 'dvc_pretrained_cnn.pt'
-model_file_ft = 'dvc_pretrained_finetune.pt'
+model_file = 'gtsrb_pretrained_cnn.pt'
+model_file_ft = 'gtsrb_pretrained_finetune.pt'
 
 
 # Option 2: Reuse a pre-trained CNN
@@ -27,17 +27,17 @@ class PretrainedNet(nn.Module):
         for param in self.vgg_features.parameters():
             param.requires_grad = False
 
-        self.fc1 = nn.Linear(512*4*4, 64)
-        self.fc2 = nn.Linear(64, 1)
+        self.fc1 = nn.Linear(512*2*2, 256)
+        self.fc2 = nn.Linear(256, 43)
 
     def forward(self, x):
         x = self.vgg_features(x)
 
         # flattened 2D to 1D
-        x = x.view(-1, 512*4*4)
+        x = x.view(-1, 512*2*2)
 
         x = F.relu(self.fc1(x))
-        return torch.sigmoid(self.fc2(x))
+        return self.fc2(x)
 
 
 def train_main():
@@ -47,16 +47,16 @@ def train_main():
 
     params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optim.SGD(params, lr=0.01)
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
 
     print(model)
 
-    batch_size = 25
+    batch_size = 50
     train_loader = get_train_loader(batch_size)
     validation_loader = get_validation_loader(batch_size)
 
     log = get_tensorboard('pretrained')
-    epochs = 10
+    epochs = 20
 
     start_time = datetime.now()
     for epoch in range(1, epochs + 1):
@@ -87,7 +87,7 @@ def train_main():
     params = filter(lambda p: p.requires_grad, model.parameters())
     # optimizer = optim.SGD(model.parameters(), lr=1e-3)
     optimizer = optim.RMSprop(params, lr=1e-5)
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
 
     print(model)
 
@@ -114,7 +114,7 @@ def test_main():
     model.load_state_dict(torch.load(model_file))
     model.to(device)
 
-    test_loader = get_test_loader(25)
+    test_loader = get_test_loader(50)
 
     print('=========')
     print('Pretrained:')
