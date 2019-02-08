@@ -15,6 +15,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from distutils.version import LooseVersion as LV
+import os
 
 torch.manual_seed(42)
 if torch.cuda.is_available():
@@ -24,7 +25,14 @@ else:
 print('Using PyTorch version:', torch.__version__, ' Device:', device)
 assert(LV(torch.__version__) >= LV("1.0.0"))
 
-datapath = "/media/data/dogs-vs-cats/train-2000"
+datapath = os.path.join(os.environ['TMPDIR'], os.environ['SLURM_JOB_ID'],
+                        'dogs-vs-cats/train-2000')
+if not os.path.isdir(datapath):
+    # datapath = "/media/data/dogs-vs-cats/train-2000"
+    datapath = "/wrk/makoskel/dogs-vs-cats/train-2000"
+
+print('Reading data from path:', datapath)
+
 (nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
 
 
