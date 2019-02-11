@@ -9,10 +9,10 @@ import torch.optim as optim
 from datetime import datetime
 import horovod.torch as hvd
 
-from pytorch_dvc_cnn import get_train_loader, get_validation_loader, get_test_loader
-from pytorch_dvc_cnn import device, train, evaluate, get_tensorboard
+from pytorch_dvc_cnn_hvd import get_train_loader, get_validation_loader, get_test_loader
+from pytorch_dvc_cnn_hvd import device, train, evaluate, get_tensorboard
 
-model_file = 'dvc_simple_cnn.pt'
+model_file = 'dvc_simple_cnn_hvd.pt'
 
 
 # Option 1: Train a small CNN from scratch
@@ -49,7 +49,8 @@ def train_main():
     model = Net().to(device)
     # optimizer = optim.SGD(model.parameters(), lr=0.05)
 
-    print(model)
+    if hvd.rank() == 0:
+        print(model)
 
     # Horovod: broadcast parameters.
     hvd.broadcast_parameters(model.state_dict(), root_rank=0)
@@ -64,25 +65,27 @@ def train_main():
     criterion = nn.BCELoss()
 
     batch_size = 25
-    train_loader = get_train_loader(batch_size)
-    validation_loader = get_validation_loader(batch_size)
+    train_loader, train_sampler = get_train_loader(batch_size)
+    validation_loader, validation_sampler = get_validation_loader(batch_size)
 
-    log = get_tensorboard('simple')
+    log = get_tensorboard('simple_hvd')
     epochs = 50
 
     start_time = datetime.now()
     for epoch in range(1, epochs + 1):
-        train(model, train_loader, criterion, optimizer, epoch, log)
+        train(model, train_loader, train_sampler, criterion, optimizer, epoch, log)
 
         with torch.no_grad():
-            print('\nValidation:')
-            evaluate(model, validation_loader, criterion, epoch, log)
+            if hvd.rank() == 0:
+                print('\nValidation:')
+            evaluate(model, validation_loader, validation_sampler, criterion, epoch, log)
 
     end_time = datetime.now()
-    print('Total training time: {}.'.format(end_time - start_time))
 
-    torch.save(model.state_dict(), model_file)
-    print('Wrote model to', model_file)
+    if hvd.rank() == 0:
+        print('Total training time: {}.'.format(end_time - start_time))
+        torch.save(model.state_dict(), model_file)
+        print('Wrote model to', model_file)
 
 
 def test_main():
