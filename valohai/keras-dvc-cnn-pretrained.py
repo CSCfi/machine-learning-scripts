@@ -60,7 +60,7 @@ def main(settings):
     # and the test set of 22000 images.
 
     datapath = '/valohai/inputs/dataset/dogs-vs-cats/train-2000'
-    datapath = "/wrk/makoskel/dogs-vs-cats/train-2000"
+    #datapath = "/wrk/makoskel/dogs-vs-cats/train-2000"
     (nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
 
     # ### Data augmentation

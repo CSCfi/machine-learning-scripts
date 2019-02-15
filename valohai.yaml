@@ -73,7 +73,12 @@
 - step:
     name: keras-dvc-cnn-pretrained
     image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
-    command: python keras-dvc-cnn-pretrained.py 
+    command:
+      - tar xf /valohai/inputs/dataset/dogs-vs-cats.tar -C /valohai/inputs/dataset/
+      - python valohai/keras-dvc-cnn-pretrained.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/dogs-vs-cats.tar
     parameters:
       - name: epochs
         pass-as: --epochs={v}
