@@ -10,8 +10,7 @@ import keras
 from keras.models import load_model
 from keras.preprocessing.image import ImageDataGenerator
 
-# image_dir = '/valohai/repository/tmp'
-image_dir = os.path.realpath('tmp')
+tmp_dir = '/tmp'
 
 
 def download_url(url, target_dir):
@@ -28,17 +27,19 @@ def main(args):
     # print(model.summary())
     print('Loaded model [{}] with {} layers.\n'.format(args.model, len(model.layers)))
 
+    td = tempfile.TemporaryDirectory(dir=tmp_dir)
+    image_dir = td.name
     target_dir = os.path.join(image_dir, 'a')
-    os.makedirs(target_dir, exist_ok=True)
+    os.makedirs(target_dir)
 
-    print('Downloading images from [{}] to [{}].'.format(args.urls_file, image_dir))
+    print('Downloading images from [{}] to [{}].'.format(args.urls_file, target_dir))
     file_to_url = {}
     with open(args.urls_file, 'r') as fp:
         for url in fp:
             url = url.rstrip()
             fn = os.path.basename(download_url(url, target_dir))
             file_to_url[fn] = url
-            # print('*', fn, url)
+            # print('*', url)
 
     print()
     input_image_size = (150, 150)
@@ -66,8 +67,7 @@ def main(args):
         cls = 'cat' if pn < 0.5 else 'dog'
         print(json.dumps({'url': url, 'value': float(pn), 'class': cls}))
 
-    for fn in file_to_url.keys():
-        os.unlink(os.path.join(target_dir, fn))
+    td.cleanup()
 
 
 if __name__ == '__main__':
