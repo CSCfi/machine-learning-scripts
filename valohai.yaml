@@ -84,3 +84,11 @@
         pass-as: --epochs={v}
         type: integer
         default: 10
+
+- endpoint:
+    name: predict-animal
+    image: ufoym/deepo:all-py36-cpu
+    wsgi: valohai.prediction_server:predict_wsgi
+    files:
+      - name: model
+        path: model.h5
