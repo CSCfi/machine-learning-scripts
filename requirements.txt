@@ -1,0 +1,5 @@
+# dependencies for Valohai inference deployment
+Pillow==5.4.1
+requests==2.21.0
+scikit-image==0.14.2
+Werkzeug==0.14.1
