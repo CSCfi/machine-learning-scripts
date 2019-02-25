@@ -145,5 +145,5 @@
       - name: model
         path: model.h5
       - name: tokenizer
-        path: tokenizer_sfnet.json.gz
+        path: tokenizer_sfnet.pkl
 
