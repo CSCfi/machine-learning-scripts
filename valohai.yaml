@@ -85,6 +85,24 @@
         type: integer
         default: 10
 
+- step:
+    name: pytorch_dvc_cnn_simple
+    image: nvcr.io/nvidia/pytorch:19.01-py3
+    command:
+      - nvidia-smi
+      - nvcc --version | grep release
+      - cat /usr/include/x86_64-linux-gnu/cudnn_v*.h | grep CUDNN_MAJOR -A 2
+      - pip install torchvision
+      - tar xf /valohai/inputs/dataset/dogs-vs-cats.tar -C /valohai/inputs/dataset/
+      - python valohai/pytorch_dvc_cnn_simple.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/dogs-vs-cats.tar
+    parameters:
+      - name: test
+        pass-as: --test
+        optional: True
+
 - endpoint:
     name: predict-animal
     image: ufoym/deepo:all-py36-cpu
@@ -92,3 +110,4 @@
     files:
       - name: model
         path: model.h5
+
