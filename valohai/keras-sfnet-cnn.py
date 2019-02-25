@@ -175,6 +175,10 @@ sequences = tokenizer.texts_to_sequences(texts)
 word_index = tokenizer.word_index
 print('Found %s unique tokens.' % len(word_index))
 
+with gzip.open('/valohai/outputs/tokenizer_sfnet.json.gz', 'wt', encoding='utf-8') as f:
+    f.write(tokenizer.to_json())
+
+
 data = sequence.pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
 
 labels = to_categorical(np.asarray(labels))
