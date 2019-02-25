@@ -137,3 +137,13 @@
       - name: model
         path: model.h5
 
+- endpoint:
+    name: predict-nyyssi
+    image: ufoym/deepo:all-py36-cpu
+    wsgi: valohai.prediction_server_text:predict_wsgi
+    files:
+      - name: model
+        path: model.h5
+      - name: tokenizer
+        path: tokenizer_sfnet.json.gz
+
