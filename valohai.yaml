@@ -85,7 +85,6 @@
         type: integer
         default: 10
 
-
 - step:
     name: pytorch_dvc_cnn_simple
     image: nvcr.io/nvidia/pytorch:19.01-py3
@@ -103,3 +102,12 @@
       - name: test
         pass-as: --test
         optional: True
+
+- endpoint:
+    name: predict-animal
+    image: ufoym/deepo:all-py36-cpu
+    wsgi: valohai.prediction_server:predict_wsgi
+    files:
+      - name: model
+        path: model.h5
+
