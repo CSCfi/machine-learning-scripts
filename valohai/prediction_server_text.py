@@ -8,6 +8,7 @@ from keras.engine.saving import load_model
 from werkzeug.debug import DebuggedApplication
 from werkzeug.wrappers import Response, Request
 import gzip
+import pickle
 
 """
 Development Usage:
@@ -62,8 +63,16 @@ def predict_wsgi(environ, start_response):
         model = load_model(model_path)
 
     if tokenizer is None:
-        with gzip.open('tokenizer_sfnet.json.gz', 'rt', encoding='utf-8') as f:
-            tokenizer = text.text.tokenizer_from_json(f.read())
+        # with gzip.open('tokenizer_sfnet.json.gz', 'rt', encoding='utf-8') as f:
+        #     tokenizer = text.text.tokenizer_from_json(f.read())
+        local_pkl_files = glob.glob('tokenizer*.pkl')
+        if not local_pkl_files:
+            result = {'error': 'Could not find pickled Tokenizer to load, contact support.'}
+            response = create_response(result, 400)
+            return response(environ, start_response)
+        pkl_path = os.path.join(os.getcwd(), local_pkl_files[0])
+        with open(pkl_path, 'rb') as f:
+            tokenizer = pickle.load(f)
 
     print(texts)
     sequences = tokenizer.texts_to_sequences(texts)

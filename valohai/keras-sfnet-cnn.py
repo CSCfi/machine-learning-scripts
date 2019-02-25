@@ -175,8 +175,10 @@ sequences = tokenizer.texts_to_sequences(texts)
 word_index = tokenizer.word_index
 print('Found %s unique tokens.' % len(word_index))
 
-with gzip.open('/valohai/outputs/tokenizer_sfnet.json.gz', 'wt', encoding='utf-8') as f:
-    f.write(tokenizer.to_json())
+#with gzip.open('/valohai/outputs/tokenizer_sfnet.json.gz', 'wt', encoding='utf-8') as f:
+#    f.write(tokenizer.to_json())
+with open('/valohai/outputs/tokenizer_sfnet.pkl', 'wb') as f:
+    pickle.dump(tokenizer, f, pickle.HIGHEST_PROTOCOL)
 
 
 data = sequence.pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
