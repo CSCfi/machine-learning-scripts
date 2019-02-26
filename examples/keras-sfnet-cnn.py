@@ -278,6 +278,7 @@ predictions = model.predict(x_test)
 
 cm = confusion_matrix(np.argmax(y_test, axis=1), np.argmax(predictions, axis=1),
                       labels=list(range(9)))
+cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
 print('Classification accuracy for each newsgroup:')
 print()
