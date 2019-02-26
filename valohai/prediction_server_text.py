@@ -43,7 +43,9 @@ def predict_wsgi(environ, start_response):
     global model, tokenizer
 
     request = Request(environ)
-    get_text = request.args.get('text')
+    get_text = request.form.get('text')
+    if get_text is None:
+        get_text = request.args.get('text')
     if get_text is None:
         result = {'error': 'No text given in the request.'}
         response = create_response(result, 400)
@@ -86,6 +88,11 @@ def predict_wsgi(environ, start_response):
     # Report results.
     result = {g: float(prediction[i]) for g, i in groups.items()}
     response = create_response(result, 200)
+    # response.headers.add('Access-Control-Allow-Origin', '*')
+    # response.headers.add('Access-Control-Allow-Methods',
+    #                      'GET,PUT,POST,DELETE,PATCH')
+    # response.headers.add('Access-Control-Allow-Headers',
+    #                      'Content-Type, Authorization')
     return response(environ, start_response)
 
 
