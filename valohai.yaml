@@ -86,6 +86,32 @@
         default: 10
 
 - step:
+    name: keras-sfnet-cnn
+    image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
+    command:
+      - tar xf /valohai/inputs/dataset/*.tar.gz -C /valohai/inputs/dataset/
+      - pip install tqdm
+      - python valohai/keras-sfnet-cnn.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/sfnet2007-2008.tar.gz
+      - name: embedding
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/cc.fi.300.vec.gz
+
+- step:
+    name: keras-sfnet-lstm
+    image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
+    command:
+      - tar xf /valohai/inputs/dataset/*.tar.gz -C /valohai/inputs/dataset/
+      - pip install tqdm
+      - python valohai/keras-sfnet-lstm.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/sfnet2007-2008.tar.gz
+      - name: embedding
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/cc.fi.300.vec.gz
+
+- step:
     name: pytorch_dvc_cnn_simple
     image: nvcr.io/nvidia/pytorch:19.01-py3
     command:
@@ -110,4 +136,14 @@
     files:
       - name: model
         path: model.h5
+
+- endpoint:
+    name: predict-nyyssi
+    image: ufoym/deepo:all-py36-cpu
+    wsgi: valohai.prediction_server_text:predict_wsgi
+    files:
+      - name: model
+        path: model.h5
+      - name: tokenizer
+        path: tokenizer_sfnet.pkl
 
