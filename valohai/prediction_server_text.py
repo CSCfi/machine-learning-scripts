@@ -76,9 +76,9 @@ def predict_wsgi(environ, start_response):
         with open(pkl_path, 'rb') as f:
             tokenizer = pickle.load(f)
 
-    print(texts)
+    # print(texts)
     sequences = tokenizer.texts_to_sequences(texts)
-    print(sequences)
+    # print(sequences)
     data = sequence.pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
 
     # Give prediction
