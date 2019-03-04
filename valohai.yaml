@@ -146,4 +146,5 @@
         path: model.h5
       - name: tokenizer
         path: tokenizer_sfnet.pkl
-
+      - name: valohai-metadata.json
+        path: valohai-metadata.json

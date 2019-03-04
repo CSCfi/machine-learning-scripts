@@ -88,11 +88,17 @@ def predict_wsgi(environ, start_response):
     # Report results.
     result = {g: float(prediction[i]) for g, i in groups.items()}
     response = create_response(result, 200)
-    # response.headers.add('Access-Control-Allow-Origin', '*')
-    # response.headers.add('Access-Control-Allow-Methods',
-    #                      'GET,PUT,POST,DELETE,PATCH')
-    # response.headers.add('Access-Control-Allow-Headers',
-    #                      'Content-Type, Authorization')
+
+    # Get details about the deployed model if possible.
+    metadata_path = 'valohai-metadata.json'
+    if os.path.isfile(metadata_path):
+        with open(metadata_path) as f:
+            try:
+                deployment_metadata = json.load(f)
+                result['deployment'] = deployment_metadata
+            except json.JSONDecodeError:
+                # Could not read the deployment metadata, ignore it
+                pass
     return response(environ, start_response)
 
 
