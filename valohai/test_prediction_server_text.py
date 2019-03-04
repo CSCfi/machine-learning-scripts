@@ -18,6 +18,9 @@ if __name__ == '__main__':
     parser.add_argument('text', type=str)
     args = parser.parse_args()
 
+    target_url = "https://valohai.cloud/msjoberg/pdl-test/sfnet/current/predict-nyyssi"
+    # target_url = "http://localhost:8000"
+
     params = {'text': args.text}
-    response = requests.get('http://localhost:8000', params=params)
+    response = requests.get(target_url, params=params)
     print(f'Result: {response.status_code} => {response.content}')

@@ -86,8 +86,8 @@ def predict_wsgi(environ, start_response):
     prediction = predictions[0]
 
     # Report results.
-    result = {g: float(prediction[i]) for g, i in groups.items()}
-    response = create_response(result, 200)
+    result = {}
+    result['predict'] = {g: float(prediction[i]) for g, i in groups.items()}
 
     # Get details about the deployed model if possible.
     metadata_path = 'valohai-metadata.json'
@@ -99,6 +99,8 @@ def predict_wsgi(environ, start_response):
             except json.JSONDecodeError:
                 # Could not read the deployment metadata, ignore it
                 pass
+
+    response = create_response(result, 200)
     return response(environ, start_response)
 
 
