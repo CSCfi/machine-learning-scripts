@@ -1,21 +1,25 @@
+#!/usr/bin/env python3
+
 import argparse
+import json
 import os
 import requests
+import tempfile
 
 import keras
 from keras.models import load_model
 from keras.preprocessing.image import ImageDataGenerator
 
-# image_dir = '/valohai/repository/tmp'
-image_dir = os.path.realpath('tmp')
+tmp_dir = '/tmp'
 
 
 def download_url(url, target_dir):
-    output_name = os.path.join(target_dir, os.path.basename(url))
-    print('* [{}]'.format(os.path.basename(output_name)))
+    suffix = os.path.splitext(url)[1]
+    fp = tempfile.NamedTemporaryFile(dir=target_dir, suffix=suffix, delete=False)
     r = requests.get(url, allow_redirects=True)
-    open(output_name, 'wb').write(r.content)
-    return output_name
+    fp.write(r.content)
+    fp.close()
+    return fp.name
 
 
 def main(args):
@@ -23,14 +27,19 @@ def main(args):
     # print(model.summary())
     print('Loaded model [{}] with {} layers.\n'.format(args.model, len(model.layers)))
 
+    td = tempfile.TemporaryDirectory(dir=tmp_dir)
+    image_dir = td.name
     target_dir = os.path.join(image_dir, 'a')
-    os.makedirs(target_dir, exist_ok=True)
+    os.makedirs(target_dir)
 
-    print('Downloading images from [{}] to [{}].'.format(args.urls_file, image_dir))
-    image_files = []
+    print('Downloading images from [{}] to [{}].'.format(args.urls_file, target_dir))
+    file_to_url = {}
     with open(args.urls_file, 'r') as fp:
         for url in fp:
-            image_files.append(download_url(url.rstrip(), target_dir))
+            url = url.rstrip()
+            fn = os.path.basename(download_url(url, target_dir))
+            file_to_url[fn] = url
+            # print('*', url)
 
     print()
     input_image_size = (150, 150)
@@ -38,14 +47,14 @@ def main(args):
     batch_size = 25
 
     test_generator = noopgen.flow_from_directory(
-        os.path.realpath('tmp'),
+        image_dir,
         target_size=input_image_size,
         batch_size=batch_size,
         class_mode=None,
         shuffle=False)
 
     preds = model.predict_generator(test_generator,
-                                    steps=len(image_files) // batch_size + 1,
+                                    steps=len(file_to_url) // batch_size + 1,
                                     use_multiprocessing=False,
                                     workers=4,
                                     verbose=1)
@@ -54,7 +63,11 @@ def main(args):
     filenames = test_generator.filenames
     for i, p in enumerate(preds):
         pn = p[0]
-        print(os.path.basename(filenames[i]), pn, 'cat' if pn < 0.5 else 'dog')
+        url = file_to_url[os.path.basename(filenames[i])]
+        cls = 'cat' if pn < 0.5 else 'dog'
+        print(json.dumps({'url': url, 'value': float(pn), 'class': cls}))
+
+    td.cleanup()
 
 
 if __name__ == '__main__':
