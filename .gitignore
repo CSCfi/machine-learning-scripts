@@ -14,3 +14,4 @@ logs/
 /notebooks/dvc-vgg16-reuse.pt
 __pycache__/
 /examples/*.pt
+/notebooks/model.png
