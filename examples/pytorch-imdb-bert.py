@@ -49,7 +49,7 @@ print('Using PyTorch version:', torch.__version__,
 assert(LV(torch.__version__) >= LV("1.0.0"))
 
 
-# IMDB data set
+# IMDB DATA SET
 # 
 # We'll use the raw version of the IMDB dataset
 # (http://ai.stanford.edu/~amaas/data/sentiment/).  For convenience,
@@ -59,10 +59,10 @@ assert(LV(torch.__version__) >= LV("1.0.0"))
 # The ground truth consists of binary sentiments for each review:
 # positive (1) or negative (0).
 
-train_df = pd.read_pickle("/wrk/makoskel/imdb/imdb-train.pkl")
-test_df  = pd.read_pickle("/wrk/makoskel/imdb/imdb-test.pkl")
+train_df = pd.read_pickle("/users/makoskel/imdb/imdb-train.pkl")
+test_df  = pd.read_pickle("/users/makoskel/imdb/imdb-test.pkl")
 
-print('IMDB data loaded:')
+print('\nIMDB data loaded:')
 print('train:', train_df.shape)
 print('test:', test_df.shape)
 
@@ -86,19 +86,21 @@ sentences_test = ["[CLS] " + s for s in sentences_test]
 labels_train = train_df.polarity.values
 labels_test  = test_df.polarity.values
 
-print ("The first training sentence:")
+print ("\nThe first training sentence:")
 print(sentences_train[0], 'LABEL:', labels_train[0])
 
 # Next we use the BERT tokenizer to convert the sentences into tokens
 # that match the data BERT was trained on.
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased',
+BERTMODEL = "bert-base-uncased"
+
+tokenizer = BertTokenizer.from_pretrained(BERTMODEL,
                                           do_lower_case=True)
 
 tokenized_train = [tokenizer.tokenize(s) for s in sentences_train]
 tokenized_test  = [tokenizer.tokenize(s) for s in sentences_test]
 
-print ("The tokenized first training sentence:")
+print ("\nThe full tokenized first training sentence:")
 print (tokenized_train[0])
 
 # Now we set the maximum sequence lengths for our training and test
@@ -113,7 +115,7 @@ MAX_LEN_TRAIN, MAX_LEN_TEST = 128, 512
 tokenized_train = [t[:(MAX_LEN_TRAIN-1)]+['SEP'] for t in tokenized_train]
 tokenized_test  = [t[:(MAX_LEN_TEST-1)]+['SEP'] for t in tokenized_test]
 
-print ("The tokenized first training sentence:")
+print ("\nThe truncated tokenized first training sentence:")
 print (tokenized_train[0])
 
 # Next we use the BERT tokenizer to convert each token into an integer
@@ -128,7 +130,7 @@ ids_test = [tokenizer.convert_tokens_to_ids(t) for t in tokenized_test]
 ids_test = np.array([np.pad(i, (0, MAX_LEN_TEST-len(i)),
                             mode='constant') for i in ids_test])
 
-print ("The indices of the first training sentence:")
+print ("\nThe indices of the first training sentence:")
 print (ids_train[0])
 
 # BERT also requires *attention masks*, with 1 for each real token in
@@ -173,6 +175,7 @@ test_masks  = torch.tensor(amasks_test)
 
 BATCH_SIZE = 32
 
+print('\nDatasets:')
 print('Train: ', end="")
 train_data = TensorDataset(train_inputs, train_masks,
                            train_labels)
@@ -197,21 +200,25 @@ test_dataloader = DataLoader(test_data, sampler=test_sampler,
                              batch_size=BATCH_SIZE)
 print(len(test_data), 'reviews')
 
-# BERT model initialization
+# BERT MODEL INITIALIZATION
 #
 # We now load a pretrained BERT model with a single linear
 # classification layer added on top.
 
-model = BertForSequenceClassification.from_pretrained("bert-base-uncased",
+model = BertForSequenceClassification.from_pretrained(BERTMODEL,
                                                       num_labels=2)
 model.cuda()
+print('\nPretrained BERT model "{}" loaded'.format(BERTMODEL))
 
 # We set the remaining hyperparameters needed for fine-tuning the
-# pretrained model: * `EPOCHS`: the number of training epochs in
-# fine-tuning (recommended values between 2 and 4) * `WEIGHT_DECAY`:
-# weight decay for the Adam optimizer * `LR`: learning rate for the
-# Adam optimizer (2e-5 to 5e-5 recommended) * `WARMUP_STEPS`: number
-# of warmup steps to (linearly) reach the set learning rate
+# pretrained model: 
+# * EPOCHS: the number of training epochs in fine-tuning
+#   (recommended values between 2 and 4) 
+# * WEIGHT_DECAY: weight decay for the Adam optimizer 
+# * LR: learning rate for the Adam optimizer 
+#   (2e-5 to 5e-5 recommended) 
+# * WARMUP_STEPS: number of warmup steps to (linearly) reach the
+#   set learning rate
 #
 # We also need to grab the training parameters from the pretrained
 # model.
@@ -234,7 +241,7 @@ optimizer = AdamW(optimizer_grouped_parameters, lr=LR, eps=1e-8)
 scheduler = WarmupLinearSchedule(optimizer, warmup_steps=WARMUP_STEPS,
                                  t_total=len(train_dataloader)*EPOCHS)
 
-# Learning
+# LEARNING
 
 # Let's now define functions to train() and evaluate() the model:
 
@@ -296,8 +303,8 @@ def evaluate(loader):
     n_correct += np.sum(predictions == labels)
     n_all += len(labels)
 
-  print('Accuracy: [{}/{}] {:.4f}\n'.format(n_correct, n_all,
-                                            n_correct/n_all))
+  print('Accuracy: [{}/{}] {:.4f}'.format(n_correct, n_all,
+                                          n_correct/n_all))
 
 
 # Now we are ready to train our model using the train()
@@ -306,9 +313,11 @@ def evaluate(loader):
 
 train_lossv = []
 for epoch in range(1, EPOCHS + 1):
+    print()
     train(epoch, train_lossv)
     print('\nValidation set:')
     evaluate(validation_dataloader)
+
 
 # Let's take a look at our training loss over all batches:
 
@@ -327,7 +336,7 @@ plt.savefig("training-loss.png")
 # For a better measure of the quality of the model, let's see the
 # model accuracy for the test reviews.
 
-print('Test set:')
+print('\nTest set:')
 evaluate(test_dataloader)
 
 # eof
