@@ -29,10 +29,16 @@ grep -h -B 1 'Accuracy' --no-group-separator slurm-{$jid1b,$jid2b}.out
 echo
 echo "** pytorch_dvc_gtsrb **"
 grep -h -B 1 'Accuracy' --no-group-separator slurm-{$jid3b,$jid4b}.out
+echo
+echo "** pytorch_20ng_cnn **"
+grep -B 1 'Accuracy' slurm-${jid5}.out
+echo
+echo "** pytorch_20ng_rnn **"
+grep -B 1 'Accuracy' slurm-${jid6}.out
 EOF
 )
 
-squeue -u $USER -o "%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R %.20E"
+squeue -u $USER -o "%.10i %.9P %.16j %.8T %.10M %.50E"
 
 echo
 echo "Final summary will appear in slurm-${jidx}.out"
