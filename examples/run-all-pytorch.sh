@@ -19,12 +19,10 @@ jid3b=$($SBATCH --dependency=afterany:$jid3a $SCRIPT pytorch_gtsrb_cnn_simple.py
 jid4a=$($SBATCH $SCRIPT pytorch_gtsrb_cnn_pretrained.py)
 jid4b=$($SBATCH --dependency=afterany:$jid4a $SCRIPT pytorch_gtsrb_cnn_pretrained.py --test)
 
-# jid5=$($SBATCH $SCRIPT pytorch_20ng_cnn.py)
-# jid6=$($SBATCH $SCRIPT pytorch_20ng_rnn.py)
+jid5=$($SBATCH $SCRIPT pytorch_20ng_cnn.py)
+jid6=$($SBATCH $SCRIPT pytorch_20ng_rnn.py)
 
-## $SBATCH -A project_2001756 --partition=test --dependency=afterany:$jid1b:$jid2b:$jid3b:$jid4b:$jid5:$jid6 --job-name="summary" <<EOF
-
-jid0=$($SBATCH -A project_2001756 --partition=test --dependency=afterany:$jid1b:$jid2b:$jid3b:$jid4b --job-name="summary" <<EOF
+jidx=$($SBATCH -A project_2001756 --partition=test --dependency=afterany:$jid1b:$jid2b:$jid3b:$jid4b:$jid5:$jid6 --job-name="summary" <<EOF
 #!/bin/bash
 echo "** pytorch_dvc_cnn **"
 grep -h -B 1 'Accuracy' --no-group-separator slurm-{$jid1b,$jid2b}.out
@@ -37,4 +35,4 @@ EOF
 squeue -u $USER -o "%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R %.20E"
 
 echo
-echo "Final summary will appear in slurm-${jid0}.out"
+echo "Final summary will appear in slurm-${jidx}.out"
