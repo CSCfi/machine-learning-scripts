@@ -6,7 +6,15 @@
 # tf2-dvc_tfr-cnn-simple.py
 
 SBATCH="sbatch --parsable"
+SBATCH_TEST="$SBATCH -A project_2001756 --partition=test"
 SCRIPT="run-puhti-tf2.sh"
+
+if [ $(hostname -s) = "taito-gpu" ]
+then
+    SBATCH_TEST="$SBATCH --partition=gputest"
+    SCRIPT="run-nores.sh"
+fi
+
 
 jid1a=$($SBATCH $SCRIPT tf2-dvc-cnn-simple.py)
 jid1b=$($SBATCH --dependency=afterany:$jid1a $SCRIPT tf2-dvc-cnn-evaluate.py dvc-cnn-simple.h5)
@@ -28,7 +36,7 @@ jid6=$($SBATCH $SCRIPT tf2-20ng-rnn.py)
 
 echo $jid1b $jid2b $jid2c $jid3b $jid4b $jid4c $jid5 $jid6
 
-jidx=$($SBATCH -A project_2001825 --partition=test --dependency=afterany:$jid1b:$jid2b:$jid2c:$jid3b:$jid4b:$jid4c:$jid5:$jid6 --job-name="summary" <<EOF
+jidx=$($SBATCH_TEST --dependency=afterany:$jid1b:$jid2b:$jid2c:$jid3b:$jid4b:$jid4c:$jid5:$jid6 --job-name="summary" <<EOF
 #!/bin/bash
 echo "** tf2-dvc-cnn ($jid1a,$jid2a -> $jid1b,$jid2b,$jid2c) **"
 grep -h --no-group-separator -E 'Evaluating|Test set accuracy' slurm-{$jid1b,$jid2b,$jid2c}.out
