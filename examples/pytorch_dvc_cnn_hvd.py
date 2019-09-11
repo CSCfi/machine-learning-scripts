@@ -24,11 +24,14 @@ if torch.cuda.is_available():
     device = torch.device('cuda')
 else:
     device = torch.device('cpu')
-print('Using PyTorch version:', torch.__version__, ' Device:', device)
-assert(LV(torch.__version__) >= LV("1.0.0"))
 
 hvd.init()
 torch.cuda.set_device(hvd.local_rank())
+
+if hvd.rank() == 0:
+    print('Using PyTorch version:', torch.__version__, ' Device:', device)
+    assert(LV(torch.__version__) >= LV("1.0.0"))
+
 
 datapath = None
 subpath = 'dogs-vs-cats/train-2000'
@@ -42,12 +45,15 @@ if datapath is None or not os.path.isdir(datapath):
 if not os.path.isdir(datapath):
     datapath = '/media/data/' + subpath
 
-print('Reading data from path:', datapath)
+if hvd.rank() == 0:
+    print('Reading data from path:', datapath)
 
 (nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
 
 
 def get_tensorboard(log_name):
+    if hvd.rank() != 0:
+        return None
     try:
         import tensorboardX
         import os
@@ -62,9 +68,13 @@ def get_tensorboard(log_name):
         return None
 
 
-def train(model, loader, criterion, optimizer, epoch, log=None):
+def train(model, loader, sampler, criterion, optimizer, epoch, log=None):
     # Set model to training mode
     model.train()
+
+    # Horovod: set epoch to sampler for shuffling.
+    sampler.set_epoch(epoch)
+
     epoch_loss = 0.
 
     # Loop over each batch from the training set
@@ -91,10 +101,11 @@ def train(model, loader, criterion, optimizer, epoch, log=None):
         optimizer.step()
 
     epoch_loss /= len(loader.dataset)
-    print('Train Epoch: {}, Loss: {:.4f}'.format(epoch, epoch_loss))
+    print('Train Epoch: {}:{}, Loss: {:.4f}'.format(epoch, hvd.rank(), epoch_loss))
 
     if log is not None:
         log.add_scalar('loss', epoch_loss, epoch-1)
+
 
 def metric_average(val, name):
     tensor = torch.tensor(val)
@@ -154,7 +165,8 @@ noop_transform = transforms.Compose([
 
 
 def get_train_loader(batch_size=25):
-    print('Train: ', end="")
+    if hvd.rank() == 0:
+        print('Train: ', end="")
     train_dataset = datasets.ImageFolder(root=datapath+'/train',
                                          transform=data_transform)
 
@@ -164,33 +176,37 @@ def get_train_loader(batch_size=25):
     train_loader = DataLoader(train_dataset, batch_size=batch_size,
                               sampler=train_sampler, num_workers=4, pin_memory=True)
 
-    # train_loader = DataLoader(train_dataset, batch_size=batch_size,
-    #                            shuffle=True, num_workers=4)
-    print('Found', len(train_dataset), 'images belonging to',
-          len(train_dataset.classes), 'classes')
-    return train_loader
+    if hvd.rank() == 0:
+        print('Found', len(train_dataset), 'images belonging to',
+              len(train_dataset.classes), 'classes')
+    return train_loader, train_sampler
 
 
 def get_validation_loader(batch_size=25):
-    print('Validation: ', end="")
+    if hvd.rank() == 0:
+        print('Validation: ', end="")
     val_dataset = datasets.ImageFolder(root=datapath+'/validation',
                                        transform=noop_transform)
     val_sampler = torch.utils.data.distributed.DistributedSampler(
         val_dataset, num_replicas=hvd.size(), rank=hvd.rank())
     val_loader = DataLoader(val_dataset, batch_size=batch_size,
                             sampler=val_sampler, shuffle=False, num_workers=4)
-    print('Found', len(val_dataset), 'images belonging to',
-          len(val_dataset.classes), 'classes')
-    return val_loader
+    if hvd.rank() == 0:
+        print('Found', len(val_dataset), 'images belonging to',
+              len(val_dataset.classes), 'classes')
+    return val_loader, val_sampler
+
 
 def get_test_loader(batch_size=25):
-    print('Test: ', end="")
+    if hvd.rank() == 0:
+        print('Test: ', end="")
     test_dataset = datasets.ImageFolder(root=datapath+'/test',
                                         transform=noop_transform)
     test_sampler = torch.utils.data.distributed.DistributedSampler(
         test_dataset, num_replicas=hvd.size(), rank=hvd.rank())
     test_loader = DataLoader(test_dataset, batch_size=batch_size,
                              sampler=test_sampler, shuffle=False, num_workers=4)
-    print('Found', len(test_dataset), 'images belonging to',
-          len(test_dataset.classes), 'classes')
+    if hvd.rank() == 0:
+        print('Found', len(test_dataset), 'images belonging to',
+              len(test_dataset.classes), 'classes')
     return test_loader
