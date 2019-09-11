@@ -69,3 +69,82 @@
         pass-as: --inference={v}
         type: integer
         default: 1
+
+- step:
+    name: keras-dvc-cnn-pretrained
+    image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
+    command:
+      - tar xf /valohai/inputs/dataset/dogs-vs-cats.tar -C /valohai/inputs/dataset/
+      - python valohai/keras-dvc-cnn-pretrained.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/dogs-vs-cats.tar
+    parameters:
+      - name: epochs
+        pass-as: --epochs={v}
+        type: integer
+        default: 10
+
+- step:
+    name: keras-sfnet-cnn
+    image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
+    command:
+      - tar xf /valohai/inputs/dataset/*.tar.gz -C /valohai/inputs/dataset/
+      - pip install tqdm
+      - python valohai/keras-sfnet-cnn.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/sfnet2007-2008.tar.gz
+      - name: embedding
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/cc.fi.300.vec.gz
+
+- step:
+    name: keras-sfnet-lstm
+    image: valohai/keras:2.1.3-tensorflow1.4.0-python3.5-cuda8.0-cudnn6-devel-ubuntu14.04
+    command:
+      - tar xf /valohai/inputs/dataset/*.tar.gz -C /valohai/inputs/dataset/
+      - pip install tqdm
+      - python valohai/keras-sfnet-lstm.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/sfnet2007-2008.tar.gz
+      - name: embedding
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/cc.fi.300.vec.gz
+
+- step:
+    name: pytorch_dvc_cnn_simple
+    image: nvcr.io/nvidia/pytorch:19.01-py3
+    command:
+      - nvidia-smi
+      - nvcc --version | grep release
+      - cat /usr/include/x86_64-linux-gnu/cudnn_v*.h | grep CUDNN_MAJOR -A 2
+      - pip install torchvision
+      - tar xf /valohai/inputs/dataset/dogs-vs-cats.tar -C /valohai/inputs/dataset/
+      - python valohai/pytorch_dvc_cnn_simple.py {parameters}
+    inputs:
+      - name: dataset
+        default: https://object.pouta.csc.fi/swift/v1/AUTH_dac/mldata/dogs-vs-cats.tar
+    parameters:
+      - name: test
+        pass-as: --test
+        optional: True
+
+- endpoint:
+    name: predict-animal
+    image: ufoym/deepo:all-py36-cpu
+    wsgi: valohai.prediction_server:predict_wsgi
+    files:
+      - name: model
+        path: model.h5
+
+- endpoint:
+    name: predict-nyyssi
+    image: ufoym/deepo:all-py36-cpu
+    wsgi: valohai.prediction_server_text:predict_wsgi
+    files:
+      - name: model
+        path: model.h5
+      - name: tokenizer
+        path: tokenizer_sfnet.pkl
+      - name: valohai-metadata.json
+        path: valohai-metadata.json

@@ -14,12 +14,7 @@ overlaps.  You are free to select a suitable port from the range 1024-49151.
 Set up a suitable module environment, for example:
 
     module purge
-    module load python-env/3.5.3-ml
-
-or
-
-    module purge
-    module load python-env/intelpython3.6-2018.3 gcc/5.4.0 cuda/9.0 cudnn/7.1-cuda9
+    module load python-env/3.6.3-ml
 
 Further instructions on setting up TensorFlow in Taito-GPU can be found at https://research.csc.fi/-/tensorflow . More information about Mlpython (machine learning for Python) environments can be found at https://research.csc.fi/-/mlpython .
 
