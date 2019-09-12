@@ -41,10 +41,10 @@ echo "** pytorch_gtsrb_cnn ($jid3a,$jid4a -> $jid3b,$jid4b) **"
 grep -h -B 1 'Accuracy' --no-group-separator slurm-{$jid3b,$jid4b}.out
 echo
 echo "** pytorch_20ng_cnn ($jid5) **"
-grep -B 1 'Accuracy' slurm-${jid5}.out
+grep -A 1 'Test set' slurm-${jid5}.out
 echo
 echo "** pytorch_20ng_rnn ($jid6)**"
-grep -B 1 'Accuracy' slurm-${jid6}.out
+grep -A 1 'Test set' slurm-${jid6}.out
 echo
 echo "** pytorch_20ng_bert ($jid7)**"
 grep -A 1 'Test set' slurm-${jid7}.out
