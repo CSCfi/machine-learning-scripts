@@ -1,5 +1,5 @@
 # dependencies for Valohai inference deployment
-Pillow==5.4.1
+pillow>=6.2.0
 requests==2.21.0
 scikit-image==0.14.2
-Werkzeug==0.14.1
+werkzeug>=0.15.3
