@@ -12,6 +12,30 @@ import numpy as np
 import urllib.request
 
 
+def show_failures(predictions, y_test, X_test, trueclass=None,
+                  predictedclass=None, maxtoshow=10):
+    import matplotlib.pyplot as plt
+
+    errors = predictions != y_test
+    print('Showing max', maxtoshow, 'first failures. The predicted class is '
+          'shown first and the correct class in parenthesis.')
+    ii = 0
+    plt.figure(figsize=(maxtoshow, 1))
+    for i in range(X_test.shape[0]):
+        if ii >= maxtoshow:
+            break
+        if errors[i]:
+            if trueclass is not None and y_test[i] != trueclass:
+                continue
+            if predictedclass is not None and predictions[i] != predictedclass:
+                continue
+            plt.subplot(1, maxtoshow, ii+1)
+            plt.axis('off')
+            plt.imshow(X_test[i, :].reshape(28, 28), cmap="gray")
+            plt.title("%s (%s)" % (predictions[i], y_test[i]))
+            ii = ii + 1
+
+
 def download_mnist(directory, filename):
     """Download (and unzip) a file from the MNIST dataset if not already done."""
 
