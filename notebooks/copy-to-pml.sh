@@ -29,3 +29,5 @@ try_copy () {
 try_copy sklearn-mnist-lc.ipynb Exercise-02.ipynb
 try_copy sklearn-mnist-svm.ipynb Exercise-05.ipynb
 try_copy tf2-mnist-mlp.ipynb Exercise-09.ipynb
+try_copy sklearn-mnist-nb.ipynb Extra-01.ipynb
+try_copy sklearn-mnist-grid.ipynb Extra-02.ipynb
