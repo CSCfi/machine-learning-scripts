@@ -16,3 +16,4 @@ __pycache__/
 /examples/*.pt
 /notebooks/model.png
 /MNIST/
+/notebooks/mydt*

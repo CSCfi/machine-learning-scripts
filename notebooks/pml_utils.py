@@ -16,6 +16,8 @@ def show_failures(predictions, y_test, X_test, trueclass=None,
                   predictedclass=None, maxtoshow=10):
     import matplotlib.pyplot as plt
 
+    if len(predictions.shape) > 1:
+        predictions = np.argmax(predictions, axis=1)
     errors = predictions != y_test
     print('Showing max', maxtoshow, 'first failures. The predicted class is '
           'shown first and the correct class in parenthesis.')
