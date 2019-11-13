@@ -11,6 +11,9 @@ import struct
 import numpy as np
 import urllib.request
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
 
 def show_failures(predictions, y_test, X_test, trueclass=None,
                   predictedclass=None, maxtoshow=10):
@@ -37,6 +40,45 @@ def show_failures(predictions, y_test, X_test, trueclass=None,
             plt.title("%s (%s)" % (predictions[i], y_test[i]))
             ii = ii + 1
 
+def show_clusters(labels, n_clust, X, n_img_per_row = 32):
+    img = np.zeros((28 * n_clust, 28 * n_img_per_row))
+
+    for i in range(n_clust):
+        ix = 28 * i
+        X_cluster = X[labels==i,:]
+        try:
+            for j in range(n_img_per_row):
+                iy = 28 * j
+                img[ix:ix + 28, iy:iy + 28] = X_cluster[j,:].reshape(28,28)
+        except IndexError:
+            pass
+
+    plt.figure(figsize=(12, 12))
+    plt.imshow(img, cmap='gray')
+    plt.title('Some MNIST digits from each cluster')
+    plt.xticks([])
+    plt.yticks([])
+    plt.ylabel('clusters');
+
+def show_anomalies(predictions, X, n_img_per_row = 32):
+    img = np.zeros((28 * 2, 28 * n_img_per_row))
+    anolabels = [-1, 1]
+
+    for i in range(2):
+        ix = 28 * i
+        X_ano = X[predictions==anolabels[i], :]
+        try:
+            for j in range(n_img_per_row):
+                iy = 28 * j
+                img[ix:ix + 28, iy:iy + 28] = X_ano[j,:].reshape(28,28)
+        except IndexError:
+            pass
+
+    plt.figure(figsize=(12, 12))
+    plt.imshow(img, cmap='gray')
+    plt.title('Examples of anomalies (upper row) and normal data (lower row)')
+    plt.xticks([])
+    plt.yticks([]);
 
 def download_mnist(directory, filename):
     """Download (and unzip) a file from the MNIST dataset if not already done."""
