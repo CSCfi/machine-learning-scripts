@@ -19,6 +19,7 @@ fi
 )
 
 try_copy () {
+    echo ""
     FROM=$1
     TO=${PML_DIR}/$2
     ls -l $FROM
@@ -26,7 +27,12 @@ try_copy () {
     then
         ls -l $TO
     fi
-    cp -iv $FROM $TO
+    if cmp -s $FROM $TO
+    then
+        echo "Files $FROM and $TO are identical"
+    else
+        cp -iv $FROM $TO
+    fi
 }
 
 try_copy sklearn-mnist-lc.ipynb   Exercise-02.ipynb
