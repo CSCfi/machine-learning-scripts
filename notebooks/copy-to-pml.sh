@@ -38,3 +38,4 @@ try_copy sklearn-mnist-cl.ipynb   Exercise-13.ipynb
 try_copy sklearn-mnist-ad.ipynb   Exercise-14.ipynb
 try_copy sklearn-mnist-nb.ipynb   Extra-01.ipynb
 try_copy sklearn-mnist-grid.ipynb Extra-02.ipynb
+try_copy sklearn-mnist-ens.ipynb  Extra-03.ipynb
