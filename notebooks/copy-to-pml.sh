@@ -35,9 +35,16 @@ try_copy () {
     fi
 }
 
+try_copy pml_utils.py             pml_utils.py
 try_copy sklearn-mnist-lc.ipynb   Exercise-02.ipynb
+try_copy sklearn-mnist-nn.ipynb   Exercise-03.ipynb
+try_copy sklearn-chd-lr.ipynb     Exercise-04.ipynb
 try_copy sklearn-mnist-svm.ipynb  Exercise-05.ipynb
+try_copy sklearn-chd-svm.ipynb    Exercise-06.ipynb
+try_copy sklearn-mnist-dt.ipynb   Exercise-07.ipynb
+try_copy sklearn-chd-dt.ipynb     Exercise-08.ipynb
 try_copy tf2-mnist-mlp.ipynb      Exercise-09.ipynb
+try_copy tf2-chd-mlp.ipynb        Exercise-10.ipynb
 try_copy sklearn-mnist-dr.ipynb   Exercise-11.ipynb
 try_copy sklearn-mnist-viz.ipynb  Exercise-12.ipynb
 try_copy sklearn-mnist-cl.ipynb   Exercise-13.ipynb
