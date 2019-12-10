@@ -15,3 +15,5 @@ logs/
 __pycache__/
 /examples/*.pt
 /notebooks/model.png
+/notebooks/MNIST/
+/notebooks/mydt*
