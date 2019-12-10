@@ -5,8 +5,8 @@
 # pytorch_dvc_cnn_simple_hvd.py
 
 SBATCH="sbatch --parsable"
-SBATCH_TEST="$SBATCH -A project_2001756 --partition=test"
-SCRIPT="run-puhti-pytorch.sh"
+SBATCH_TEST="$SBATCH -A project_2002238 --partition=test -t 15"
+SCRIPT="run-pytorch.sh"
 
 if [ $(hostname -s) = "taito-gpu" ]
 then
