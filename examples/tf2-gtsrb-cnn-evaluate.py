@@ -15,13 +15,13 @@ print('Using Tensorflow version: {}, and Keras version: {}.'.format(
 #
 # The test set consists of 12630 images.
 
-# In Taito-GPU:
-DATADIR = "/wrk/makoskel/"
-# In Puhti:
-if not os.path.isdir(DATADIR):
-    DATADIR = "/projappl/project_2001756/data/"
+if 'DATADIR' in os.environ:
+    DATADIR = os.environ['DATADIR']
+else:
+    DATADIR = "/scratch/project_2000745/data/"
 
-datapath = DATADIR + "gtsrb/train-5535/"
+datapath = os.path.join(DATADIR, "gtsrb/train-5535/")
+
 nimages = dict()
 nimages['test'] = 12630
 

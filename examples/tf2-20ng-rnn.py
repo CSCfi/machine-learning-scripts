@@ -42,13 +42,12 @@ print('Using Tensorflow version:', tf.__version__,
 # embeddings. The datafile contains 100-dimensional embeddings for
 # 400,000 English words.
 
-# In Taito-GPU:
-DATADIR = "/wrk/makoskel/"
-# In Puhti:
-if not os.path.isdir(DATADIR):
-    DATADIR = "/projappl/project_2001756/data/"
+if 'DATADIR' in os.environ:
+    DATADIR = os.environ['DATADIR']
+else:
+    DATADIR = "/scratch/project_2000745/data/"
 
-GLOVE_DIR = DATADIR + "glove.6B"
+GLOVE_DIR = os.path.join(DATADIR, "glove.6B")
 
 print('Indexing word vectors.')
 
@@ -77,7 +76,7 @@ print('Found %s word vectors.' % len(embeddings_index))
 # talk.politics.misc    | comp.os.ms-windows.misc  | rec.sport.baseball | sci.med
 # talk.religion.misc    | comp.sys.mac.hardware    | rec.sport.hockey   | misc.forsale
 
-TEXT_DATA_DIR = DATADIR + "20_newsgroup"
+TEXT_DATA_DIR = os.path.join(DATADIR, "20_newsgroup")
 
 print('Processing text dataset')
 

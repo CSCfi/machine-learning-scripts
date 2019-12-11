@@ -43,13 +43,12 @@ print('Using Tensorflow version:', tf.__version__,
 # The training dataset consists of 2000 images of dogs and cats, split
 # in half.  In addition, the validation set consists of 1000 images,
 
-# In Taito-GPU:
-DATADIR = "/wrk/makoskel/"
-# In Puhti:
-if not os.path.isdir(DATADIR):
-    DATADIR = "/projappl/project_2001756/data/"
+if 'DATADIR' in os.environ:
+    DATADIR = os.environ['DATADIR']
+else:
+    DATADIR = "/scratch/project_2000745/data/"
 
-datapath = DATADIR + "dogs-vs-cats/train-2000/tfrecord/"
+datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/tfrecord/")
 
 nimages = dict()
 nimages['train'] = 2000

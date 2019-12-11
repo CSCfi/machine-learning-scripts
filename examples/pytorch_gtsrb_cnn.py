@@ -26,17 +26,14 @@ else:
 print('Using PyTorch version:', torch.__version__, ' Device:', device)
 assert(LV(torch.__version__) >= LV("1.0.0"))
 
-datapath = None
 subpath = 'gtsrb/train-5535'
 
-slurm_job_id = os.environ.get('SLURM_JOB_ID')
-if slurm_job_id is not None:
-    datapath = os.path.join(os.environ.get('TMPDIR'), os.environ.get('SLURM_JOB_ID'),
-                            subpath)
-if datapath is None or not os.path.isdir(datapath):
-    datapath = '/wrk/makoskel/' + subpath
-if not os.path.isdir(datapath):
-    datapath = '/media/data/' + subpath
+if 'DATADIR' in os.environ:
+    DATADIR = os.environ['DATADIR']
+else:
+    DATADIR = "/scratch/project_2000745/data/"
+
+datapath = os.path.join(DATADIR, subpath)
 
 print('Reading data from path:', datapath)
 
@@ -54,7 +51,7 @@ def get_tensorboard(log_name):
         print('Logging TensorBoard to:', logdir)
         os.makedirs(logdir)
         return tensorboardX.SummaryWriter(logdir)
-    except ImportError:
+    except (ImportError, FileExistsError):
         return None
 
 
@@ -166,3 +163,7 @@ def get_test_loader(batch_size=50):
     print('Found', len(test_dataset), 'images belonging to',
           len(test_dataset.classes), 'classes')
     return test_loader
+
+if __name__ == '__main__':
+    print('\nThis Python script is only for common functions. *DON\'T RUN IT DIRECTLY!* :-)')
+
