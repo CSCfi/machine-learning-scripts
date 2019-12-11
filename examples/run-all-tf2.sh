@@ -49,7 +49,7 @@ echo "** tf2-dvc_tfr-cnn ($jid7a,$jid8a -> $jid7b,$jid8b,$jid8c) **"
 grep -h --no-group-separator -E 'Evaluating|Test set accuracy' slurm-{$jid7b,$jid8b,$jid8c}.out
 echo
 echo "** tf2-dvc-cnn-simple-hvd ($jid9a -> $jid9b) **"
-grep -h --no-group-separator -E 'Evaluating|Test set accuracy' slurm-{$jid9b}.out
+grep -h --no-group-separator -E 'Evaluating|Test set accuracy' slurm-${jid9b}.out
 echo
 echo "** tf2-gtsrb-cnn ($jid3a, $jid4a -> $jid3b,$jid4b,$jid4c)**"
 grep -h --no-group-separator -E 'Evaluating|Test set accuracy' slurm-{$jid3b,$jid4b,$jid4c}.out
