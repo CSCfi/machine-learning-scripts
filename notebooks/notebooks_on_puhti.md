@@ -4,7 +4,7 @@ This page contains instructions on setting up a Jupyter notebooks server (with o
 
 Please note that this is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.
 
-In this example, we use 8899 as the port number, but please select a unique port to avoid overlaps.  You are free to select a suitable port from the range 1024-49151.  Overlaps may sometimes still occur, so try another port if you encounter an error message.
+In this example, we use 8899 as the port number, but please select a unique port to avoid overlaps.  You are free to select a suitable port from the range 1024-49151.  Overlaps may sometimes still occur, so notice that you might actually get a different port than what you requested.
 
 ## First terminal window (runs Jupyter notebook server):
 
@@ -26,6 +26,8 @@ The following `srun` command reserves CPUs and GPUs and opens a shell on one of 
 To run non-GPU notebooks, remove the `--gres` option and change the partition (option `-p`), for example, to `small`.
 
 ## Second terminal window (for SSH port forwarding):
+
+In the following commands, replace `8899` with the actual port you got when running the `jupyter-lab` command:
 
     ssh -l USERNAME -L 8899:localhost:8899 puhti.csc.fi
     ssh -L 8899:localhost:8899 rXXgYY  # use output of “hostname” command above
