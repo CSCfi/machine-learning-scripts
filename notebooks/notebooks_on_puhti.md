@@ -1,6 +1,6 @@
 # Using Jupyter notebooks on Puhti
 
-This page contains instructions on setting up a Jupyter notebooks server with GPU support in Puhti. It can be used e.g. to run GPU-enabled TensorFlow, Keras, PyTorch, or Rapids notebooks.
+This page contains instructions on setting up a Jupyter notebooks server (with optional GPU support) in Puhti. It can be used e.g. to run GPU-enabled TensorFlow, Keras, PyTorch, or Rapids notebooks.
 
 Please note that this is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.
 
@@ -18,13 +18,13 @@ Set up a suitable module environment, for example:
 
 More information about data analytics and machine learning environments available on Puhti can be found at https://docs.csc.fi/#apps/#data-analytics-and-machine-learning .
 
-The following `srun` command reserves CPUs and GPUs and opens a shell on one of the compute nodes.  The
-option `-t` sets the time limit in the format `HH:MM:SS`, the option `--mem` sets the memory 
-reservation, `--gres=gpu:v100:X` reserves `X` GPUs (1<=`X`<=4), and `-c Y` reserves `Y` CPU cores. Replace also `project_xxx` with your compute project.
+The following `srun` command reserves CPUs and GPUs and opens a shell on one of the compute nodes in the `gpu` partition.  The option `-t` sets the time limit in the format `HH:MM:SS`, the option `--mem` sets the memory  reservation, `--gres=gpu:v100:X` reserves `X` GPUs (1<=`X`<=4), and `-c Y` reserves `Y` CPU cores. Replace also `project_xxx` with your compute project.
 
     srun -A project_xxx -p gpu --gres=gpu:v100:1 -c 10 -t 02:00:00 --mem=64G --pty $SHELL
     hostname  # you need this information later
     jupyter-lab --no-browser --port=8899
+    
+To run non-GPU notebooks, remove the `--gres` option and change the partition (option `-p`), for example, to `small`.
 
 ## Second terminal window (for SSH port forwarding):
 
