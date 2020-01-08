@@ -4,8 +4,7 @@ This page contains instructions on setting up a Jupyter notebooks server (with o
 
 Please note that this is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.
 
-In this example, we use 8899 as the port number, but please select a unique port to avoid 
-overlaps.  You are free to select a suitable port from the range 1024-49151. 
+In this example, we use 8899 as the port number, but please select a unique port to avoid overlaps.  You are free to select a suitable port from the range 1024-49151.  Overlaps may sometimes still occur, so try another port if you encounter an error message.
 
 ## First terminal window (runs Jupyter notebook server):
 
