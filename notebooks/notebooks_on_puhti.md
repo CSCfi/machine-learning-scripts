@@ -23,7 +23,9 @@ The following `srun` command reserves CPUs and GPUs and opens a shell on one of 
     hostname  # you need this information later
     jupyter-lab --no-browser --port=8899
     
-To run non-GPU notebooks, remove the `--gres` option and change the partition (option `-p`), for example, to `small`.
+Note 1: Depending on the Slurm queue, you might have to wait some time before you get the shell access (with the `srun` command). 
+
+Note 2: To run non-GPU notebooks, remove the `--gres` option and change the partition (option `-p`), for example, to `small`.
 
 ## Second terminal window (for SSH port forwarding):
 
