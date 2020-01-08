@@ -27,7 +27,7 @@ To run non-GPU notebooks, remove the `--gres` option and change the partition (o
 
 ## Second terminal window (for SSH port forwarding):
 
-In the following commands, replace `8899` with the actual port you got when running the `jupyter-lab` command:
+In the following commands, replace `8899` with the actual port you got when running the `jupyter-lab` command, and `XX` and `YY` to match the compute node you are using:
 
     ssh -l USERNAME -L 8899:localhost:8899 puhti.csc.fi
     ssh -L 8899:localhost:8899 rXXgYY  # use output of “hostname” command above
