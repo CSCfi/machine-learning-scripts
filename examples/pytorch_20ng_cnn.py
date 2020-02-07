@@ -22,7 +22,8 @@ from torch.utils.data import TensorDataset, DataLoader
 
 from distutils.version import LooseVersion as LV
 
-from keras.preprocessing import sequence, text
+from gensim.utils import simple_preprocess
+from gensim.corpora import Dictionary
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
@@ -61,10 +62,12 @@ except (ImportError, FileExistsError):
 # embeddings.  The datafile contains 100-dimensional embeddings for
 # 400,000 English words.
 
-datapath = '/wrk/makoskel/'
-if not os.path.isdir(datapath):
-    datapath = '/projappl/project_2001756/data/'
-GLOVE_DIR = os.path.join(datapath, "glove.6B")
+if 'DATADIR' in os.environ:
+    DATADIR = os.environ['DATADIR']
+else:
+    DATADIR = "/scratch/project_2000745/data/"
+
+GLOVE_DIR = os.path.join(DATADIR, "glove.6B")
 
 print('Indexing word vectors.')
 
@@ -93,7 +96,7 @@ print('Found %s word vectors.' % len(embeddings_index))
 # | talk.politics.misc    | comp.os.ms-windows.misc  | rec.sport.baseball | sci.med
 # | talk.religion.misc    | comp.sys.mac.hardware    | rec.sport.hockey   | misc.forsale
 
-TEXT_DATA_DIR = "/wrk/makoskel/20_newsgroup"
+TEXT_DATA_DIR = os.path.join(DATADIR, "20_newsgroup")
 
 print('Processing text dataset')
 
@@ -119,19 +122,33 @@ for name in sorted(os.listdir(TEXT_DATA_DIR)):
 
 print('Found %s texts.' % len(texts))
 
+# Tokenize the texts using gensim.
+
+tokens = list()
+for text in texts:
+    tokens.append(simple_preprocess(text))
+
 # Vectorize the text samples into a 2D integer tensor.
 
-MAX_NUM_WORDS = 10000
+MAX_NUM_WORDS = 10000 # 2 words reserved: 0=pad, 1=oov
 MAX_SEQUENCE_LENGTH = 1000
 
-tokenizer = text.Tokenizer(num_words=MAX_NUM_WORDS)
-tokenizer.fit_on_texts(texts)
-sequences = tokenizer.texts_to_sequences(texts)
+dictionary = Dictionary(tokens)
+dictionary.filter_extremes(no_below=0, no_above=1.0,
+                           keep_n=MAX_NUM_WORDS-2)
 
-word_index = tokenizer.word_index
+word_index = dictionary.token2id
 print('Found %s unique tokens.' % len(word_index))
 
-data = sequence.pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+data = [dictionary.doc2idx(t) for t in tokens]
+
+# Truncate and pad sequences.
+
+data = [i[:MAX_SEQUENCE_LENGTH] for i in data]
+data = np.array([np.pad(i, (0, MAX_SEQUENCE_LENGTH-len(i)),
+                        mode='constant', constant_values=-2)
+                 for i in data], dtype=int)
+data = data + 2
 
 print('Shape of data tensor:', data.shape)
 print('Length of label vector:', len(labels))
@@ -185,20 +202,23 @@ print(len(test_dataset), 'messages')
 
 print('Preparing embedding matrix.')
 
-num_words = min(MAX_NUM_WORDS, len(word_index) + 1)
-embedding_dim = 100
+EMBEDDING_DIM = 100
 
-embedding_matrix = np.zeros((num_words, embedding_dim))
+embedding_matrix = np.zeros((MAX_NUM_WORDS, EMBEDDING_DIM))
+n_not_found = 0
 for word, i in word_index.items():
-    if i >= MAX_NUM_WORDS:
+    if i >= MAX_NUM_WORDS-2:
         continue
     embedding_vector = embeddings_index.get(word)
     if embedding_vector is not None:
         # words not found in embedding index will be all-zeros.
-        embedding_matrix[i] = embedding_vector
+        embedding_matrix[i+2] = embedding_vector
+    else:
+        n_not_found += 1
 
 embedding_matrix = torch.FloatTensor(embedding_matrix)
 print('Shape of embedding matrix:', embedding_matrix.shape)
+print('Words not found in pre-trained embeddings:', n_not_found)
 
 # ### Initialization
 

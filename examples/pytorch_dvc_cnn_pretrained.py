@@ -136,7 +136,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', action='store_true')
+    parser.add_argument('--model_file')
     args = parser.parse_args()
+
+    if args.model_file:
+        model_file = args.model_file
 
     if args.test:
         test_main()

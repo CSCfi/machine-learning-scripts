@@ -74,6 +74,7 @@ def train_main():
 
 
 def test_main():
+    print('Reading', model_file)
     model = Net()
     model.load_state_dict(torch.load(model_file))
     model.to(device)
@@ -81,7 +82,7 @@ def test_main():
     test_loader = get_test_loader(25)
 
     print('=========')
-    print('Test set:')
+    print('Simple:')
     with torch.no_grad():
         evaluate(model, test_loader)
 
@@ -91,7 +92,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', action='store_true')
+    parser.add_argument('--model_file')
     args = parser.parse_args()
+
+    if args.model_file:
+        model_file = args.model_file
 
     if args.test:
         test_main()
