@@ -27,6 +27,7 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.utils import plot_model
 
+from zipfile import ZipFile
 import os, datetime
 import sys
 
@@ -34,7 +35,7 @@ import numpy as np
 
 print('Using Tensorflow version:', tf.__version__,
       'Keras version:', tf.keras.__version__,
-      'backend:', tf.keras.backend.backend())
+      'backend:', tf.keras.backend.backend(), flush=True)
 
 # ## GloVe word embeddings
 # 
@@ -76,29 +77,31 @@ print('Found %s word vectors.' % len(embeddings_index))
 # talk.politics.misc    | comp.os.ms-windows.misc  | rec.sport.baseball | sci.med
 # talk.religion.misc    | comp.sys.mac.hardware    | rec.sport.hockey   | misc.forsale
 
-TEXT_DATA_DIR = os.path.join(DATADIR, "20_newsgroup")
+TEXT_DATA_ZIP = os.path.join(DATADIR, "20_newsgroup.zip")
+zf = ZipFile(TEXT_DATA_ZIP, 'r')
 
-print('Processing text dataset')
+print('Processing text dataset from', TEXT_DATA_ZIP, flush=True)
 
 texts = []  # list of text samples
 labels_index = {}  # dictionary mapping label name to numeric id
 labels = []  # list of label ids
-for name in sorted(os.listdir(TEXT_DATA_DIR)):
-    path = os.path.join(TEXT_DATA_DIR, name)
-    if os.path.isdir(path):
+for fullname in sorted(zf.namelist()):
+    parts = fullname.split('/')
+    dirname = parts[1]
+    fname = parts[2] if len(parts) > 2 else None
+    zinfo = zf.getinfo(fullname)
+    if zinfo.is_dir() and len(dirname) > 0:
         label_id = len(labels_index)
-        labels_index[name] = label_id
-        for fname in sorted(os.listdir(path)):
-            if fname.isdigit():
-                fpath = os.path.join(path, fname)
-                args = {} if sys.version_info < (3,) else {'encoding': 'latin-1'}
-                with open(fpath, **args) as f:
-                    t = f.read()
-                    i = t.find('\n\n')  # skip header
-                    if 0 < i:
-                        t = t[i:]
-                    texts.append(t)
-                labels.append(label_id)
+        labels_index[dirname] = label_id
+        print(dirname, label_id)
+    elif fname is not None and fname.isdigit():
+        with zf.open(fullname) as f:
+            t = f.read().decode('latin-1')
+            i = t.find('\n\n')  # skip header
+            if 0 < i:
+                t = t[i:]
+            texts.append(t)
+        labels.append(label_id)
 
 print('Found %s texts.' % len(texts))
 
