@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SBATCH="sbatch --parsable"
-SBATCH_TEST="$SBATCH -A project_2002238 --partition=test -t 15"
+SBATCH_TEST="$SBATCH -A project_2002586 --partition=test -t 15"
 SCRIPT="run.sh"
 SCRIPT_HVD="run-hvd.sh"
 
@@ -40,7 +40,9 @@ jid5=$($SBATCH $SCRIPT tf2-20ng-cnn.py)
 
 jid6=$($SBATCH $SCRIPT tf2-20ng-rnn.py)
 
-jidx=$($SBATCH_TEST --dependency=afterany:$jid1b:$jid2b:$jid2c:$jid3b:$jid4b:$jid4c:$jid5:$jid6:$jid7b:$jid8b:$jid8c:$jid9b --job-name="summary" <<EOF
+jid10=$($SBATCH $SCRIPT tf2-20ng-bert.py)
+
+jidx=$($SBATCH_TEST --dependency=afterany:$jid1b:$jid2b:$jid2c:$jid3b:$jid4b:$jid4c:$jid5:$jid6:$jid7b:$jid8b:$jid8c:$jid9b:$jid10 --job-name="summary" <<EOF
 #!/bin/bash
 echo "** tf2-dvc-cnn ($jid1a,$jid2a -> $jid1b,$jid2b,$jid2c) **"
 grep -h --no-group-separator -E 'Evaluating|Test set accuracy' slurm-{$jid1b,$jid2b,$jid2c}.out
@@ -59,10 +61,13 @@ grep 'Test set accuracy' slurm-${jid5}.out
 echo
 echo "** tf2-20ng-rnn ($jid6)**"
 grep 'Test set accuracy' slurm-${jid6}.out
+echo
+echo "** tf2-20ng-bert ($jid10)**"
+grep 'Test set accuracy' slurm-${jid10}.out
 EOF
 )
 
-squeue -u $USER -o "%.10i %.9P %.16j %.8T %.10M %.50E"
+squeue -u $USER -o "%.10i %.9P %.16j %.8T %.10M %.50E" -p gpu,gputest
 
 echo
 echo "Final summary will appear in slurm-${jidx}.out"
