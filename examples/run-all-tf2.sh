@@ -5,13 +5,6 @@ SBATCH_TEST="$SBATCH -A project_2002586 --partition=test -t 15"
 SCRIPT="run.sh"
 SCRIPT_HVD="run-hvd.sh"
 
-if [ $(hostname -s) = "taito-gpu" ]
-then
-    SBATCH_TEST="$SBATCH --partition=gputest"
-    SCRIPT="run-nores.sh"
-fi
-
-
 jid1a=$($SBATCH $SCRIPT tf2-dvc-cnn-simple.py)
 jid1b=$($SBATCH --dependency=afterany:$jid1a $SCRIPT tf2-dvc-cnn-evaluate.py dvc-cnn-simple.h5)
 
@@ -26,7 +19,7 @@ jid8a=$($SBATCH $SCRIPT tf2-dvc_tfr-cnn-pretrained.py)
 jid8b=$($SBATCH --dependency=afterany:$jid8a $SCRIPT tf2-dvc_tfr-cnn-evaluate.py dvc_tfr-vgg16-reuse.h5)
 jid8c=$($SBATCH --dependency=afterany:$jid8a $SCRIPT tf2-dvc_tfr-cnn-evaluate.py dvc_tfr-vgg16-finetune.h5)
 
-jid9a=$($SBATCH -p gputest -t 15 $SCRIPT_HVD tf2-dvc-cnn-simple-hvd.py)
+jid9a=$($SBATCH $SCRIPT_HVD tf2-dvc-cnn-simple-hvd.py)
 jid9b=$($SBATCH --dependency=afterany:$jid9a $SCRIPT tf2-dvc-cnn-evaluate.py dvc-cnn-simple-hvd.h5)
 
 jid3a=$($SBATCH $SCRIPT tf2-gtsrb-cnn-simple.py)
@@ -67,7 +60,7 @@ grep 'Test set accuracy' slurm-${jid10}.out
 EOF
 )
 
-squeue -u $USER -o "%.10i %.9P %.16j %.8T %.10M %.50E" -p gpu,gputest
+squeue -u $USER -o "%.10i %.9P %.16j %.8T %.10M %.50E" -p gpu,test
 
 echo
 echo "Final summary will appear in slurm-${jidx}.out"
