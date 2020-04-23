@@ -8,12 +8,6 @@ SBATCH="sbatch --parsable"
 SBATCH_TEST="$SBATCH -A project_2002238 --partition=test -t 15"
 SCRIPT="run-pytorch.sh"
 
-if [ $(hostname -s) = "taito-gpu" ]
-then
-    SBATCH_TEST="$SBATCH --partition=gputest"
-    SCRIPT="run-nores.sh"
-fi
-
 jid1a=$($SBATCH $SCRIPT pytorch_dvc_cnn_simple.py)
 jid1b=$($SBATCH --dependency=afterany:$jid1a $SCRIPT pytorch_dvc_cnn_simple.py --test)
 
@@ -51,7 +45,7 @@ grep -A 1 'Test set' slurm-${jid7}.out
 EOF
 )
 
-squeue -u $USER -o "%.10i %.9P %.16j %.8T %.10M %.50E"
+squeue -u $USER -p test,gpu -o "%.10i %.9P %.16j %.8T %.10M %.50E"
 
 echo
 echo "Final summary will appear in slurm-${jidx}.out"
