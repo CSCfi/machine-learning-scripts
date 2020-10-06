@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# notMNIST letters classification with ensembles of decision trees
+# notMNIST letters classification with random forest
 # 
-# In this notebook, we'll use random forest
-# (https://docs.rapids.ai/api/cuml/stable/api.html#random-forest)
-# [gradient boosted trees](https://xgboost.readthedocs.io/en/latest/)
-# to classify notMNIST letters using a GPU, the
-# RAPIDS (https://rapids.ai/) libraries (cudf, cuml) and
-# XGBoost (https://xgboost.readthedocs.io/en/latest/).
+# In this script, we'll use random forest
+# (https://docs.rapids.ai/api/cuml/stable/api.html#random-forest) to
+# classify notMNIST letters using a GPU and RAPIDS
+# (https://rapids.ai/) libraries (cudf, cuml).
 # 
 # **Note that a GPU is required with this notebook.**
 # 
@@ -26,7 +24,6 @@ import urllib.request
 from time import time
 
 from cuml.ensemble import RandomForestClassifier
-import xgboost as xgb
 from cuml import __version__ as cuml_version
 
 from sklearn.metrics import (accuracy_score, confusion_matrix,
@@ -163,70 +160,3 @@ print()
 print('Precision and recall for each class:');
 print()
 print(classification_report(y_test, pred_rf, labels=labels))
-
-import sys
-sys.exit()
-# ## Gradient boosted trees (XGBoost)
-#
-# Gradient boosted trees (or extreme gradient boosted trees) is another way of constructing ensembles of decision trees, using the *boosting* framework.  Here we use the GPU accelerated [XGBoost](http://xgboost.readthedocs.io/en/latest/) library to train gradient boosted trees to classify MNIST digits. 
-#
-# ### Data
-#
-# We begin by converting our training and test data to XGBoost's
-# internal DMatrix data structures.
-#
-# We will also convert the classes in `y_train` and `y_test` to
-# integers in [0..9]
-
-dtrain = xgb.DMatrix(X_train, label=y_train.view(np.int32)-ord('A'))
-dtest = xgb.DMatrix(X_test, label=y_test.view(np.int32)-ord('A'))
-
-# ### Learning
-#
-# XGBoost has been used to obtain record-breaking results on many
-# machine learning competitions, but have quite a lot of
-# hyperparameters that need to be carefully tuned to get the best
-# performance.
-#
-# For more information, see the documentation for XGBoost Parameters
-# (https://xgboost.readthedocs.io/en/latest/parameter.html)
-
-# instantiate params
-params = {}
-
-# general params
-general_params = {'verbosity': 2}
-params.update(general_params)
-
-# booster params
-booster_params = {'tree_method': 'gpu_hist'}
-params.update(booster_params)
-
-# learning task params
-learning_task_params = {'objective': 'multi:softmax', 'num_class': 10}
-params.update(learning_task_params)
-
-print(params)
-
-# We specify the number of boosted trees and are then ready to train
-# our gradient boosted trees model on the GPU.
-
-num_round = 100
-clf_xgb = xgb.train(params, dtrain, num_round)
-
-# ### Inference
-#
-# Inference is also run on the GPU.
-#
-# To match `y_test`, we also convert the predicted integer classes
-# back to letters.
-
-pred_xgb = clf_xgb.predict(dtest)
-pred_xgb = [chr(x) for x in pred_xgb.astype(np.int32)+ord('A')]
-pred_xgb = np.array(pred_xgb)
-print('Predicted', len(pred_xgb),'letters with accuracy:',
-      accuracy_score(y_test, pred_xgb))
-
-# You can also use `show_failures()` to inspect the failures, and
-# calculate the confusion matrix and other metrics as was done with
-# the random forest above.
