@@ -140,6 +140,28 @@ def get_mnist(directory, labels_as_strings=True, flatten=True):
     return (X_train, y_train, X_test, y_test)
 
 
+def load_not_mnist(directory, filename):
+    filepath = os.path.join(directory, filename)
+    if os.path.isfile(filepath):
+        print('Not downloading, file already exists:', filepath)
+    else:
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+        url_base = 'https://a3s.fi/mldata/'
+        url = url_base + filename
+        print('Downloading {} to {}'.format(url, filepath))
+        urllib.request.urlretrieve(url, filepath)
+    return np.load(filepath)
+
+
+def get_notmnist(directory):
+    X_train = load_not_mnist(directory, 'notMNIST_large_images.npy').reshape(-1, 28*28)
+    y_train = load_not_mnist(directory, 'notMNIST_large_labels.npy')
+    X_test = load_not_mnist(directory, 'notMNIST_small_images.npy').reshape(-1, 28*28)
+    y_test = load_not_mnist(directory, 'notMNIST_small_labels.npy')
+    return (X_train, y_train, X_test, y_test)
+
+
 if __name__ == '__main__':
     X_train, y_train, X_test, y_test = get_mnist('MNIST')
     print()
