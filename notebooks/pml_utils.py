@@ -155,9 +155,12 @@ def load_not_mnist(directory, filename):
 
 
 def get_notmnist(directory):
-    X_train = load_not_mnist(directory, 'notMNIST_large_images.npy').reshape(-1, 28*28)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    X_train = load_not_mnist(directory, 'notMNIST_large_images.npy').reshape(-1, 28*28).astype(np.float32)
     y_train = load_not_mnist(directory, 'notMNIST_large_labels.npy')
-    X_test = load_not_mnist(directory, 'notMNIST_small_images.npy').reshape(-1, 28*28)
+    X_test = load_not_mnist(directory, 'notMNIST_small_images.npy').reshape(-1, 28*28).astype(np.float32)
     y_test = load_not_mnist(directory, 'notMNIST_small_labels.npy')
     return (X_train, y_train, X_test, y_test)
 
