@@ -1,7 +1,7 @@
 # coding: utf-8
 
 # # Dogs-vs-cats classification with CNNs
-# 
+#
 # In this notebook, we'll train a convolutional neural network (CNN,
 # ConvNet) to classify images of dogs from images of cats using
 # TensorFlow 2.0 / Keras. This notebook is largely based on the blog
@@ -9,9 +9,9 @@
 # little data]
 # (https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html)
 # by François Chollet.
-# 
+#
 # **Note that using a GPU with this notebook is highly recommended.**
-# 
+#
 # First, the needed imports.
 
 import os, datetime
@@ -23,9 +23,8 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import (Dense, Activation, Dropout, Conv2D,
                                     Flatten, MaxPooling2D, InputLayer)
-from tensorflow.keras.preprocessing.image import (ImageDataGenerator, 
-                                                  array_to_img, 
-                                                  img_to_array, load_img)
+from tensorflow.keras.preprocessing.image import (ImageDataGenerator,
+                                                  load_img)
 from tensorflow.keras import applications, optimizers
 
 from tensorflow.keras.callbacks import TensorBoard
@@ -38,7 +37,7 @@ print('Using Tensorflow version:', tf.__version__,
 
 
 # ## Data
-# 
+#
 # The training dataset consists of 2000 images of dogs and cats, split
 # in half.  In addition, the validation set consists of 1000 images,
 
@@ -61,16 +60,19 @@ def get_paths(dataset):
     image_paths = list(data_root.glob('*/*'))
     image_paths = [str(path) for path in image_paths]
     image_count = len(image_paths)
-    assert image_count == nimages[dataset], "Found {} images, expected {}".format(image_count, nimages[dataset])
+    assert image_count == nimages[dataset], \
+        "Found {} images, expected {}".format(image_count, nimages[dataset])
     return image_paths
 
 image_paths = dict()
 image_paths['train'] = get_paths('train')
 image_paths['validation'] = get_paths('validation')
 
-label_names = sorted(item.name for item in pathlib.Path(datapath+'train').glob('*/')
+label_names = sorted(item.name for item in
+                     pathlib.Path(datapath+'train').glob('*/')
                      if item.is_dir())
-label_to_index = dict((name, index) for index,name in enumerate(label_names))
+label_to_index = dict((name, index) for index, name in enumerate(label_names))
+
 
 def get_labels(dataset):
     return [label_to_index[pathlib.Path(path).parent.name]
@@ -81,10 +83,10 @@ image_labels['train'] = get_labels('train')
 image_labels['validation'] = get_labels('validation')
 
 # ### Data augmentation
-# 
+#
 # We need to resize all training and validation images to a fixed
 # size. Here we'll use 160x160 pixels.
-# 
+#
 # Then, to make the most of our limited number of training examples,
 # we'll apply random transformations (crop and horizontal flip) to
 # them each time we are looping over them. This way, we "augment" our
@@ -100,8 +102,7 @@ def preprocess_image(image, augment):
     if augment:
         image = tf.image.resize(image, [256, 256])
         image = tf.image.random_crop(image, INPUT_IMAGE_SIZE)
-        if random.random() < 0.5:
-            image = tf.image.flip_left_right(image)
+        image = tf.image.random_flip_left_right(image)
     else:
         image = tf.image.resize(image, INPUT_IMAGE_SIZE[:2])
     image /= 255.0  # normalize to [0,1] range
@@ -117,7 +118,7 @@ def load_and_not_augment_image(path, label):
 
 
 # ### TF Datasets
-# 
+#
 # Let's now define our TF Datasets
 # (https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/data/Dataset#class_dataset)
 # for training and validation data. First the Datasets contain the
@@ -133,22 +134,23 @@ validation_dataset = tf.data.Dataset.from_tensor_slices((image_paths['validation
 
 BATCH_SIZE = 32
 
-train_dataset = train_dataset.map(load_and_augment_image, num_parallel_calls=10)
+train_dataset = train_dataset.map(load_and_augment_image,
+                                  num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.shuffle(2000).batch(BATCH_SIZE, drop_remainder=True)
 train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
 validation_dataset = validation_dataset.map(load_and_not_augment_image,
-                                            num_parallel_calls=10)
+                                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
 validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
 validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
 # ## Train a small CNN from scratch
-# 
+#
 # Similarly as with MNIST digits, we can start from scratch and train
 # a CNN for the classification task. However, due to the small number
 # of training images, a large network will easily overfit, regardless
 # of the data augmentation.
-# 
+#
 # ### Initialization
 
 model = Sequential()
