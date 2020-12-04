@@ -23,9 +23,7 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D, LSTM
 from tensorflow.keras.utils import to_categorical
-
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.utils import plot_model
 
 from zipfile import ZipFile
 import os, datetime
