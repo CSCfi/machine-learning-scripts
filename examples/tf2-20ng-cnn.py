@@ -51,14 +51,18 @@ GLOVE_DIR = os.path.join(DATADIR, "glove.6B")
 print('Indexing word vectors.')
 
 embeddings_index = {}
-with open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt')) as f:
+with open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt'), encoding='utf-8') as f:
+    n_skipped = 0
     for line in f:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embeddings_index[word] = coefs
+        try:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+        except UnicodeEncodeError:
+            n_skipped += 1
 
-print('Found %s word vectors.' % len(embeddings_index))
+print('Found {} word vectors, skipped {}.'.format(len(embeddings_index), n_skipped))
 
 # ## 20 Newsgroups data set
 # 
