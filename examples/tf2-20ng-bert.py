@@ -18,6 +18,7 @@
 # First, the needed imports.
 
 import tensorflow as tf
+from tensorflow.keras.callbacks import TensorBoard
 
 from transformers import BertTokenizer, BertConfig
 from transformers import TFBertForSequenceClassification
@@ -35,9 +36,9 @@ import numpy as np
 print('Using TensorFlow version:', tf.__version__,
       'Keras version:', tf.keras.__version__,
       'Transformers version:', transformers_version)
-assert(LV(tf.__version__) >= LV("2.0.0"))
+assert(LV(tf.__version__) >= LV("2.3.0"))
 
-if tf.test.is_gpu_available():
+if len(tf.config.list_physical_devices('GPU')):
     from tensorflow.python.client import device_lib
     for d in device_lib.list_local_devices():
         if d.device_type == 'GPU':
@@ -231,6 +232,12 @@ model.compile(optimizer=optimizer, loss=loss, metrics=[metric])
 # For fine-tuning BERT on a specific task, the authors recommend a
 # batch size of 16 or 32, and 2-4 epochs.
 
+logdir = os.path.join(os.getcwd(), "logs",
+                      "20ng-bert-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+print('TensorBoard log directory:', logdir)
+os.makedirs(logdir)
+callbacks = [TensorBoard(log_dir=logdir)]
+
 EPOCHS = 4
 BATCH_SIZE = 32
 
@@ -238,7 +245,8 @@ history = model.fit([train_inputs, train_masks, train_type_ids], train_labels,
                     validation_data=([validation_inputs, validation_masks,
                                       validation_type_ids],
                                      validation_labels),
-                    batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=2)
+                    batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=2,
+                    callbacks=callbacks)
 
 # ## Inference
 # 
