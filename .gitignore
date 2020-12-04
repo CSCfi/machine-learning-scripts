@@ -18,3 +18,4 @@ __pycache__/
 /notebooks/model.png
 /notebooks/MNIST/
 /notebooks/mydt*
+/notebooks/iris.csv
