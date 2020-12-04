@@ -23,9 +23,7 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D, LSTM
 from tensorflow.keras.utils import to_categorical
-
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.utils import plot_model
 
 from zipfile import ZipFile
 import os, datetime
@@ -179,16 +177,12 @@ model.add(Embedding(num_words,
                     weights=[embedding_matrix],
                     input_length=MAX_SEQUENCE_LENGTH,
                     trainable=False))
-model.add(Dropout(0.5))
 
-model.add(LSTM(128, return_sequences=True))
 model.add(LSTM(128))
-
-model.add(Dense(128, activation='relu'))
 model.add(Dense(20, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy',
-              optimizer='rmsprop',
+              optimizer='adam',
               metrics=['accuracy'])
 
 print(model.summary())
@@ -201,7 +195,7 @@ print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
 
-epochs = 10
+epochs = 20
 
 history = model.fit(train_dataset, epochs=epochs,
                     validation_data=validation_dataset,
