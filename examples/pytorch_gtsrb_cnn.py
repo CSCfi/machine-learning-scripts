@@ -31,7 +31,7 @@ subpath = 'gtsrb/train-5535'
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2000745/data/"
+    DATADIR = "/scratch/project_2003747/data/"
 
 datapath = os.path.join(DATADIR, subpath)
 

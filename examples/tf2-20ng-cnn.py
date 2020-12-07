@@ -44,7 +44,7 @@ print('Using Tensorflow version:', tf.__version__,
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2000745/data/"
+    DATADIR = "/scratch/project_2003747/data/"
 
 GLOVE_DIR = os.path.join(DATADIR, "glove.6B")
 
