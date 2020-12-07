@@ -102,7 +102,8 @@ def preprocess_image(image, augment):
     if augment:
         image = tf.image.resize(image, [256, 256])
         image = tf.image.random_crop(image, INPUT_IMAGE_SIZE)
-        image = tf.image.random_flip_left_right(image)
+        if random.random() < 0.5:
+            image = tf.image.flip_left_right(image)
     else:
         image = tf.image.resize(image, INPUT_IMAGE_SIZE[:2])
     image /= 255.0  # normalize to [0,1] range
