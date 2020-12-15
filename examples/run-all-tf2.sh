@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SBATCH="sbatch --parsable"
-SBATCH_TEST="$SBATCH -A project_2002586 --partition=test -t 15"
+SBATCH_TEST="$SBATCH -A project_2003747 --partition=test -t 15"
 SCRIPT="run.sh"
 SCRIPT_HVD="run-hvd.sh"
 
