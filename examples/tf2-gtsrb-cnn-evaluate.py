@@ -18,7 +18,7 @@ print('Using Tensorflow version: {}, and Keras version: {}.'.format(
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2000745/data/"
+    DATADIR = "/scratch/project_2003747/data/"
 
 datapath = os.path.join(DATADIR, "gtsrb/train-5535/")
 
@@ -78,7 +78,7 @@ def preprocess_image(image, augment):
     if augment:
         image = tf.image.resize(image, [80, 80])
         image = tf.image.random_crop(image, INPUT_IMAGE_SIZE)
-        image = tf.image.random_flip_left_right(image)
+        #image = tf.image.random_flip_left_right(image)
         image = tf.image.random_brightness(image, 0.1)
         image = tf.clip_by_value(image, 0.0, 255.0)
     else:

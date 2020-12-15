@@ -18,6 +18,7 @@
 # First, the needed imports.
 
 import tensorflow as tf
+from tensorflow.keras.callbacks import TensorBoard
 
 from transformers import BertTokenizer, BertConfig
 from transformers import TFBertForSequenceClassification
@@ -30,14 +31,15 @@ from sklearn.metrics import confusion_matrix
 
 import io, sys, os, datetime
 
+from zipfile import ZipFile
 import numpy as np
 
 print('Using TensorFlow version:', tf.__version__,
       'Keras version:', tf.keras.__version__,
-      'Transformers version:', transformers_version)
-assert(LV(tf.__version__) >= LV("2.0.0"))
+      'Transformers version:', transformers_version, flush=True)
+assert(LV(tf.__version__) >= LV("2.3.0"))
 
-if tf.test.is_gpu_available():
+if len(tf.config.list_physical_devices('GPU')):
     from tensorflow.python.client import device_lib
     for d in device_lib.list_local_devices():
         if d.device_type == 'GPU':
@@ -48,7 +50,7 @@ else:
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2000745/data/"
+    DATADIR = "/scratch/project_2003747/data/"
 
 # ## 20 Newsgroups data set
 # 
@@ -65,29 +67,31 @@ else:
 # talk.politics.misc    | comp.os.ms-windows.misc  | rec.sport.baseball | sci.med
 # talk.religion.misc    | comp.sys.mac.hardware    | rec.sport.hockey   | misc.forsale
 
-TEXT_DATA_DIR = os.path.join(DATADIR, "20_newsgroup")
+TEXT_DATA_ZIP = os.path.join(DATADIR, "20_newsgroup.zip")
+zf = ZipFile(TEXT_DATA_ZIP, 'r')
 
-print('Processing text dataset')
+print('Processing text dataset from', TEXT_DATA_ZIP, flush=True)
 
 texts = []  # list of text samples
 labels_index = {}  # dictionary mapping label name to numeric id
 labels = []  # list of label ids
-for name in sorted(os.listdir(TEXT_DATA_DIR)):
-    path = os.path.join(TEXT_DATA_DIR, name)
-    if os.path.isdir(path):
+for fullname in sorted(zf.namelist()):
+    parts = fullname.split('/')
+    dirname = parts[1]
+    fname = parts[2] if len(parts) > 2 else None
+    zinfo = zf.getinfo(fullname)
+    if zinfo.is_dir() and len(dirname) > 0:
         label_id = len(labels_index)
-        labels_index[name] = label_id
-        for fname in sorted(os.listdir(path)):
-            if fname.isdigit():
-                fpath = os.path.join(path, fname)
-                args = {} if sys.version_info < (3,) else {'encoding': 'latin-1'}
-                with open(fpath, **args) as f:
-                    t = f.read()
-                    i = t.find('\n\n')  # skip header
-                    if 0 < i:
-                        t = t[i:]
-                    texts.append(t)
-                labels.append(label_id)
+        labels_index[dirname] = label_id
+        print(dirname, label_id)
+    elif fname is not None and fname.isdigit():
+        with zf.open(fullname) as f:
+            t = f.read().decode('latin-1')
+            i = t.find('\n\n')  # skip header
+            if 0 < i:
+                t = t[i:]
+            texts.append(t)
+        labels.append(label_id)
 
 labels = np.array(labels)
 print('Found %s texts.' % len(texts))
@@ -231,6 +235,12 @@ model.compile(optimizer=optimizer, loss=loss, metrics=[metric])
 # For fine-tuning BERT on a specific task, the authors recommend a
 # batch size of 16 or 32, and 2-4 epochs.
 
+logdir = os.path.join(os.getcwd(), "logs",
+                      "20ng-bert-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+print('TensorBoard log directory:', logdir)
+os.makedirs(logdir)
+callbacks = [TensorBoard(log_dir=logdir)]
+
 EPOCHS = 4
 BATCH_SIZE = 32
 
@@ -238,7 +248,8 @@ history = model.fit([train_inputs, train_masks, train_type_ids], train_labels,
                     validation_data=([validation_inputs, validation_masks,
                                       validation_type_ids],
                                      validation_labels),
-                    batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=2)
+                    batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=2,
+                    callbacks=callbacks)
 
 # ## Inference
 # 

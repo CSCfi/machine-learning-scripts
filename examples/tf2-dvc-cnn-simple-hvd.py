@@ -61,7 +61,7 @@ if gpus:
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2000745/data/"
+    DATADIR = "/scratch/project_2003747/data/"
 
 datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/")
 

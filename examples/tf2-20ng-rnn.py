@@ -23,9 +23,7 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D, LSTM
 from tensorflow.keras.utils import to_categorical
-
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.utils import plot_model
 
 from zipfile import ZipFile
 import os, datetime
@@ -46,21 +44,25 @@ print('Using Tensorflow version:', tf.__version__,
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2000745/data/"
+    DATADIR = "/scratch/project_2003747/data/"
 
 GLOVE_DIR = os.path.join(DATADIR, "glove.6B")
 
 print('Indexing word vectors.')
 
 embeddings_index = {}
-with open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt')) as f:
+with open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt'), encoding='utf-8') as f:
+    n_skipped = 0
     for line in f:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embeddings_index[word] = coefs
+        try:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+        except UnicodeEncodeError:
+            n_skipped += 1
 
-print('Found %s word vectors.' % len(embeddings_index))
+print('Found {} word vectors, skipped {}.'.format(len(embeddings_index), n_skipped))
 
 # ## 20 Newsgroups data set
 # 
@@ -179,16 +181,12 @@ model.add(Embedding(num_words,
                     weights=[embedding_matrix],
                     input_length=MAX_SEQUENCE_LENGTH,
                     trainable=False))
-model.add(Dropout(0.5))
 
-model.add(LSTM(128, return_sequences=True))
 model.add(LSTM(128))
-
-model.add(Dense(128, activation='relu'))
 model.add(Dense(20, activation='softmax'))
 
 model.compile(loss='categorical_crossentropy',
-              optimizer='rmsprop',
+              optimizer='adam',
               metrics=['accuracy'])
 
 print(model.summary())
@@ -201,7 +199,7 @@ print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
 
-epochs = 10
+epochs = 20
 
 history = model.fit(train_dataset, epochs=epochs,
                     validation_data=validation_dataset,
