@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# TODO
-# pytorch_dvc_cnn_hvd.py
-# pytorch_dvc_cnn_simple_hvd.py
-
-SBATCH="sbatch --parsable"
-SBATCH_TEST="$SBATCH -A project_2003747 --partition=test -t 15"
+SBATCH="sbatch --parsable -t 15 --reservation= "
+SBATCH_TEST="$SBATCH -A project_2003959 --partition=test -t 15"
 SCRIPT="run-pytorch.sh"
 SCRIPT_HVD="run-pytorch-hvd.sh"
 
