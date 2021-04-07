@@ -41,7 +41,8 @@ class Net(pl.LightningModule):
         x = x.view(-1, 17*17*64)
         x = F.relu(self.fc1(x))
         x = self.fc1_drop(x)
-        return torch.sigmoid(self.fc2(x))
+        x = torch.sigmoid(self.fc2(x))
+        return x.type_as(x)
 
     def shared_step(self, batch):
         data, target = batch
@@ -61,7 +62,7 @@ class Net(pl.LightningModule):
         acc = FM.accuracy(output, target)
 
         metrics = {'val_acc': acc, 'val_loss': loss}
-        self.log_dict(metrics)
+        self.log_dict(metrics, on_step=True, on_epoch=True, sync_dist=True)
         return metrics
 
     def test_step(self, batch, batch_idx):
@@ -69,7 +70,7 @@ class Net(pl.LightningModule):
 
         metrics = {'test_acc': metrics['val_acc'],
                    'test_loss': metrics['val_loss']}
-        self.log_dict(metrics)
+        self.log_dict(metrics, on_step=True, on_epoch=True, sync_dist=True)
 
     def configure_optimizers(self):
         return torch.optim.SGD(self.parameters(), lr=0.05)
@@ -82,7 +83,8 @@ def main():
     train_loader = get_train_loader(batch_size)
     validation_loader = get_validation_loader(batch_size)
 
-    trainer = pl.Trainer(gpus=1, max_epochs=50, progress_bar_refresh_rate=0)
+    trainer = pl.Trainer(gpus=-1, max_epochs=50, accelerator='ddp')
+    # trainer = pl.Trainer(gpus=1, max_epochs=50, accelerator='horovod', checkpoint_callback=False)
 
     start_time = datetime.now()
     trainer.fit(model, train_loader, validation_loader)
