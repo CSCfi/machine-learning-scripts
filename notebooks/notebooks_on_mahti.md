@@ -1,4 +1,4 @@
-# Using Jupyter notebooks on Puhti
+# Using Jupyter notebooks on Mahti
 
 This page contains instructions on setting up a Jupyter notebooks server (with optional GPU support) in Mahti. It can be used e.g. to run GPU-enabled TensorFlow, Keras, or PyTorch notebooks.
 
