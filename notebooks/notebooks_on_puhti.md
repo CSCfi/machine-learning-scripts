@@ -15,7 +15,7 @@ Set up a suitable module environment, for example:
     module purge
     module load tensorflow
 
-More information about data analytics and machine learning environments available on Puhti can be found at https://docs.csc.fi/#apps/#data-analytics-and-machine-learning .
+More information about data analytics and machine learning environments available on Puhti can be found at https://docs.csc.fi/apps/#data-analytics-and-machine-learning .
 
 The following `srun` command reserves CPUs and GPUs and opens a shell on one of the compute nodes in the `gpu` partition.  The option `-t` sets the time limit in the format `HH:MM:SS`, the option `--mem` sets the memory  reservation, `--gres=gpu:v100:X` reserves `X` GPUs (1<=`X`<=4), and `-c Y` reserves `Y` CPU cores. Replace also `project_xxx` with your compute project.
 
