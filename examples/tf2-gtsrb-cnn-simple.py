@@ -18,17 +18,15 @@ import datetime
 import pathlib
 
 import tensorflow as tf
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Flatten
-from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from tensorflow import keras
+from tensorflow.keras import layers
 from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
 from PIL import Image
 
 print('Using Tensorflow version: {}, and Keras version: {}.'.format(
-    tf.__version__, tf.keras.__version__))
+    tf.__version__, keras.__version__))
 
 # # Data
 #
@@ -42,6 +40,7 @@ else:
     DATADIR = "/scratch/project_2003747/data/"
 
 datapath = os.path.join(DATADIR, "gtsrb/train-5535/")
+assert os.path.exists(datapath), "Data not found at "+datapath
 
 nimages = dict()
 (nimages['train'], nimages['validation']) = (5535, 999)
@@ -159,22 +158,24 @@ validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
 #
 # ### Initialization
 
-model = Sequential()
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
 
-model.add(Conv2D(32, (3, 3), input_shape=INPUT_IMAGE_SIZE,
-                 activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+x = layers.Conv2D(32, (3, 3), activation='relu')(inputs)
+x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
-model.add(Conv2D(32, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+x = layers.Conv2D(32, (3, 3), activation='relu')(x)
+x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
-model.add(Conv2D(64, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+x = layers.Conv2D(64, (3, 3), activation='relu')(x)
+x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
-model.add(Flatten())
-model.add(Dense(128, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(43, activation='softmax'))
+x = layers.Flatten()(x)
+x = layers.Dense(128, activation='relu')(x)
+x = layers.Dropout(0.5)(x)
+outputs = layers.Dense(43, activation='softmax')(x)
+
+model = keras.Model(inputs=inputs, outputs=outputs,
+                    name="gtsrb-cnn-simple")
 
 model.compile(loss='sparse_categorical_crossentropy',
               optimizer='rmsprop',
