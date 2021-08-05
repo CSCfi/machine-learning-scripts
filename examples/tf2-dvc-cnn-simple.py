@@ -21,9 +21,6 @@ import pathlib
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.preprocessing.image import (ImageDataGenerator,
-                                                  load_img)
-from tensorflow.keras import applications, optimizers
 
 from tensorflow.keras.callbacks import TensorBoard
 
@@ -182,8 +179,8 @@ print(model.summary())
 
 # We'll use TensorBoard to visualize our progress during training.
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "dvc-cnn-simple-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(os.getcwd(), "logs", "dvc-cnn-simple-"+
+                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]

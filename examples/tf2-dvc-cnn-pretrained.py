@@ -171,7 +171,8 @@ print('Using {} pre-trained model'.format(pt_name))
 inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
 x = pt_model(inputs)
 
-# We then stack our own, randomly initialized layers on top of the pre-trained network.
+# We then stack our own, randomly initialized layers on top of the
+# pre-trained network.
 
 x = layers.Flatten()(x)
 x = layers.Dense(64, activation='relu')(x)
@@ -187,8 +188,8 @@ model.compile(loss='binary_crossentropy',
 
 # ### Learning 1: New layers
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "dvc-"+pt_name+"-reuse-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(os.getcwd(), "logs", "dvc-"+pt_name+"-reuse-"+
+                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
