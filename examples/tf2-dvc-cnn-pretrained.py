@@ -152,10 +152,6 @@ pretrained = 'VGG16'
 
 # ### Initialization
 
-inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
-
-#model.add(InputLayer(input_shape=INPUT_IMAGE_SIZE)) # possibly needed due to a bug in Keras
-
 if pretrained == 'VGG16':
     pt_model = applications.VGG16(weights='imagenet', include_top=False,      
                                   input_shape=INPUT_IMAGE_SIZE)
@@ -166,14 +162,14 @@ elif pretrained == 'MobileNet':
     pretrained_first_trainable_layer = 75
 else:
     assert 0, "Unknown model: "+pretrained
-    
+for layer in pt_model.layers:
+    layer.trainable = False
+
 pt_name = pt_model.name
 print('Using {} pre-trained model'.format(pt_name))
 
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
 x = pt_model(inputs)
-
-for layer in pt_model.layers:
-    layer.trainable = False
 
 # We then stack our own, randomly initialized layers on top of the pre-trained network.
 
@@ -183,7 +179,6 @@ outputs = layers.Dense(1, activation='sigmoid')(x)
 
 model = keras.Model(inputs=inputs, outputs=outputs,
                     name="dvc-"+pt_name+"-pretrained")
-
 print(model.summary())
 
 model.compile(loss='binary_crossentropy',
@@ -227,8 +222,8 @@ model.compile(loss='binary_crossentropy',
     optimizer=optimizers.RMSprop(lr=1e-5),
     metrics=['accuracy'])
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "dvc-"+pt_name+"-finetune-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(os.getcwd(), "logs", "dvc-"+pt_name+"-finetune-"+
+                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
