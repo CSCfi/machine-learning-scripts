@@ -19,21 +19,16 @@ import random
 import pathlib
 
 import tensorflow as tf
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import (Dense, Activation, Dropout, Conv2D,
-                                    Flatten, MaxPooling2D, InputLayer)
-from tensorflow.keras.preprocessing.image import (ImageDataGenerator,
-                                                  load_img)
-from tensorflow.keras import applications, optimizers
+from tensorflow import keras
+from tensorflow.keras import layers
 
 from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
 
 print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', tf.keras.__version__,
-      'backend:', tf.keras.backend.backend())
+      'Keras version:', keras.__version__,
+      'backend:', keras.backend.backend())
 
 
 # ## Data
@@ -48,6 +43,7 @@ else:
 
 print('Using DATADIR', DATADIR)
 datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/")
+assert os.path.exists(datapath), "Data not found at "+datapath
 
 nimages = dict()
 nimages['train'] = 2000
@@ -154,21 +150,24 @@ validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.experimenta
 #
 # ### Initialization
 
-model = Sequential()
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
 
-model.add(Conv2D(32, (3, 3), input_shape=INPUT_IMAGE_SIZE, activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+x = layers.Conv2D(32, (3, 3), activation='relu')(inputs)
+x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
-model.add(Conv2D(32, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+x = layers.Conv2D(32, (3, 3), activation='relu')(x)
+x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
-model.add(Conv2D(64, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+x = layers.Conv2D(64, (3, 3), activation='relu')(x)
+x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
-model.add(Flatten())
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(1, activation='sigmoid'))
+x = layers.Flatten()(x)
+x = layers.Dense(64, activation='relu')(x)
+x = layers.Dropout(0.5)(x)
+outputs = layers.Dense(1, activation='sigmoid')(x)
+
+model = keras.Model(inputs=inputs, outputs=outputs,
+                    name="dvc-cnn-simple")
 
 model.compile(loss='binary_crossentropy',
               optimizer='rmsprop',
@@ -180,8 +179,8 @@ print(model.summary())
 
 # We'll use TensorBoard to visualize our progress during training.
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "dvc-cnn-simple-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(os.getcwd(), "logs", "dvc-cnn-simple-"+
+                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]

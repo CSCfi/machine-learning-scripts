@@ -16,12 +16,9 @@
 # First, the needed imports.
 
 import tensorflow as tf
-
+from tensorflow import keras
+from tensorflow.keras import layers
 from tensorflow.keras.preprocessing import sequence, text
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.layers import Embedding
-from tensorflow.keras.layers import Conv1D, MaxPooling1D, GlobalMaxPooling1D, LSTM
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import TensorBoard
 
@@ -32,8 +29,8 @@ import sys
 import numpy as np
 
 print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', tf.keras.__version__,
-      'backend:', tf.keras.backend.backend(), flush=True)
+      'Keras version:', keras.__version__,
+      'backend:', keras.backend.backend(), flush=True)
 
 # ## GloVe word embeddings
 # 
@@ -46,12 +43,13 @@ if 'DATADIR' in os.environ:
 else:
     DATADIR = "/scratch/project_2003747/data/"
 
-GLOVE_DIR = os.path.join(DATADIR, "glove.6B")
-
 print('Indexing word vectors.')
 
+glove_filename = os.path.join(DATADIR, "glove.6B", "glove.6B.100d.txt")
+assert os.path.exists(glove_filename), "File not found: "+glove_filename
+
 embeddings_index = {}
-with open(os.path.join(GLOVE_DIR, 'glove.6B.100d.txt'), encoding='utf-8') as f:
+with open(glove_filename, encoding='utf-8') as f:
     n_skipped = 0
     for line in f:
         try:
@@ -80,6 +78,7 @@ print('Found {} word vectors, skipped {}.'.format(len(embeddings_index), n_skipp
 # talk.religion.misc    | comp.sys.mac.hardware    | rec.sport.hockey   | misc.forsale
 
 TEXT_DATA_ZIP = os.path.join(DATADIR, "20_newsgroup.zip")
+assert os.path.exists(TEXT_DATA_ZIP), "File not found: "+TEXT_DATA_ZIP
 zf = ZipFile(TEXT_DATA_ZIP, 'r')
 
 print('Processing text dataset from', TEXT_DATA_ZIP, flush=True)
@@ -174,23 +173,24 @@ print('Shape of embedding matrix:', embedding_matrix.shape)
 # ### Initialization
 
 print('Build model...')
-model = Sequential()
+inputs = keras.Input(shape=(None,), dtype="int64")
 
-model.add(Embedding(num_words,
-                    embedding_dim,
-                    weights=[embedding_matrix],
-                    input_length=MAX_SEQUENCE_LENGTH,
-                    trainable=False))
+x = layers.Embedding(num_words, embedding_dim,
+                     weights=[embedding_matrix],
+                     trainable=False)(inputs)
 
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(MaxPooling1D(5))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(MaxPooling1D(5))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(GlobalMaxPooling1D())
+x = layers.Conv1D(128, 5, activation='relu')(x)
+x = layers.MaxPooling1D(5)(x)
+x = layers.Conv1D(128, 5, activation='relu')(x)
+x = layers.MaxPooling1D(5)(x)
+x = layers.Conv1D(128, 5, activation='relu')(x)
+x = layers.GlobalMaxPooling1D()(x)
 
-model.add(Dense(128, activation='relu'))
-model.add(Dense(20, activation='softmax'))
+x = layers.Dense(128, activation='relu')(x)
+outputs = layers.Dense(20, activation='softmax')(x)
+
+model = keras.Model(inputs=inputs, outputs=outputs,
+                    name="20ng-cnn")
 
 model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
