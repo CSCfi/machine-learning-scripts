@@ -11,6 +11,9 @@ from ray.tune.schedulers import ASHAScheduler
 from ray.tune.suggest.bayesopt import BayesOptSearch
 from ray.tune.integration.keras import TuneReportCallback
 
+import os
+if 'SLURM_CPUS_PER_TASK' in os.environ:
+    ray.init(num_cpus=int(os.environ['SLURM_CPUS_PER_TASK']))
 
 def train_mnist(config):
     # https://github.com/tensorflow/tensorflow/issues/32159

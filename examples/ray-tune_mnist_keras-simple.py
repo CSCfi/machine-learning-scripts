@@ -10,6 +10,9 @@ from ray import tune
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.integration.keras import TuneReportCallback
 
+import os
+if 'SLURM_CPUS_PER_TASK' in os.environ:
+    ray.init(num_cpus=int(os.environ['SLURM_CPUS_PER_TASK']))
 
 def train_mnist(config):
     # https://github.com/tensorflow/tensorflow/issues/32159
@@ -51,11 +54,13 @@ def tune_mnist():
     sched = ASHAScheduler(
         time_attr="training_iteration")
 
+    metric="mean_accuracy"
+
     analysis = tune.run(
         train_mnist,
         name="foo",
         scheduler=sched,
-        metric="mean_accuracy",
+        metric=metric,
         mode="max",
         #stop={
         #    "mean_accuracy": 0.99,
@@ -73,6 +78,7 @@ def tune_mnist():
             "hidden": tune.randint(32, 512),
         })
     print("Best hyperparameters found were: ", analysis.best_config)
+    print("Best value for", metric, ':', analysis.best_result[metric])
 
 
 if __name__ == "__main__":
