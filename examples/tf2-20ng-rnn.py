@@ -32,16 +32,17 @@ print('Using Tensorflow version:', tf.__version__,
       'Keras version:', keras.__version__,
       'backend:', keras.backend.backend(), flush=True)
 
+if 'DATADIR' in os.environ:
+    DATADIR = os.environ['DATADIR']
+else:
+    DATADIR = "/scratch/project_2005299/data/"
+print('Using DATADIR', DATADIR)
+
 # ## GloVe word embeddings
 # 
 # Let's begin by loading a datafile containing pre-trained word
 # embeddings. The datafile contains 100-dimensional embeddings for
 # 400,000 English words.
-
-if 'DATADIR' in os.environ:
-    DATADIR = os.environ['DATADIR']
-else:
-    DATADIR = "/scratch/project_2003747/data/"
 
 print('Indexing word vectors.')
 
@@ -128,9 +129,8 @@ print('Shape of label tensor:', labels.shape)
 
 # ### TF Datasets
 # 
-# Let's now define our TF Datasets
-# (https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/data/Dataset#class_dataset)
-# for training, validation, and test data.
+# Let's now define our TF Datasets for training, validation, and test
+# data.
 
 VALIDATION_SET, TEST_SET = 1000, 4000
 BATCH_SIZE = 128 
