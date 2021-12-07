@@ -43,14 +43,15 @@ if len(tf.config.list_physical_devices('GPU')):
     from tensorflow.python.client import device_lib
     for d in device_lib.list_local_devices():
         if d.device_type == 'GPU':
-            print('GPU', d.physical_device_desc)
+            print('GPU:', d.physical_device_desc)
 else:
     print('No GPU, using CPU instead.')
 
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2003747/data/"
+    DATADIR = "/scratch/project_2005299/data/"
+print('Using DATADIR', DATADIR)
 
 # ## 20 Newsgroups data set
 # 
@@ -83,7 +84,7 @@ for fullname in sorted(zf.namelist()):
     if zinfo.is_dir() and len(dirname) > 0:
         label_id = len(labels_index)
         labels_index[dirname] = label_id
-        print(dirname, label_id)
+        print(' ', dirname, label_id)
     elif fname is not None and fname.isdigit():
         with zf.open(fullname) as f:
             t = f.read().decode('latin-1')
