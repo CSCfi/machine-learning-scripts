@@ -95,7 +95,7 @@ for fullname in sorted(zf.namelist()):
     if zinfo.is_dir() and len(dirname) > 0:
         label_id = len(labels_index)
         labels_index[dirname] = label_id
-        print(dirname, label_id)
+        print(' ', dirname, label_id)
     elif fname is not None and fname.isdigit():
         with zf.open(fullname) as f:
             t = f.read().decode('latin-1')
