@@ -177,6 +177,7 @@ inputs = keras.Input(shape=(None,), dtype="int64")
 
 x = layers.Embedding(num_words, embedding_dim,
                      weights=[embedding_matrix],
+                     input_length=MAX_SEQUENCE_LENGTH,
                      trainable=False)(inputs)
 
 x = layers.LSTM(128)(x)

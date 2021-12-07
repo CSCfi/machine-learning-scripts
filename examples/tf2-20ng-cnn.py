@@ -177,6 +177,7 @@ inputs = keras.Input(shape=(None,), dtype="int64")
 
 x = layers.Embedding(num_words, embedding_dim,
                      weights=[embedding_matrix],
+                     input_length=MAX_SEQUENCE_LENGTH,
                      trainable=False)(inputs)
 
 x = layers.Conv1D(128, 5, activation='relu')(x)
@@ -206,7 +207,7 @@ print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
 
-epochs = 10
+epochs = 20
 
 history = model.fit(train_dataset, epochs=epochs,
                     validation_data=validation_dataset,
