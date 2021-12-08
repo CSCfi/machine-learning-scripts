@@ -204,9 +204,9 @@ test_masks = np.array(test_masks)
 # BERT also requires *type ids*, which are zero-valued vectors in our
 # case:
 
-train_type_ids = np.zeros(train_masks.shape)
-validation_type_ids = np.zeros(validation_masks.shape)
-test_type_ids = np.zeros(test_masks.shape)
+train_type_ids = np.zeros(train_masks.shape, dtype=int)
+validation_type_ids = np.zeros(validation_masks.shape, dtype=int)
+test_type_ids = np.zeros(test_masks.shape, dtype=int)
 
 # ## BERT model initialization
 # 
