@@ -20,22 +20,12 @@ import random
 import pathlib
 
 import tensorflow as tf
-
-from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import (Dense, Activation, Dropout, Conv2D,
-                                    Flatten, MaxPooling2D, InputLayer)
-from tensorflow.keras.preprocessing.image import (ImageDataGenerator, 
-                                                  array_to_img, 
-                                                  img_to_array, load_img)
-from tensorflow.keras import applications, optimizers
-
-from tensorflow.keras.callbacks import TensorBoard
-
+from tensorflow import keras
 import numpy as np
 
 print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', tf.keras.__version__,
-      'backend:', tf.keras.backend.backend())
+      'Keras version:', keras.__version__,
+      'backend:', keras.backend.backend())
 
 # ## Data
 # 
@@ -47,6 +37,7 @@ else:
     DATADIR = "/scratch/project_2003747/data/"
 
 datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/tfrecord/")
+assert os.path.exists(datapath), "Data not found at "+datapath
 
 nimages = dict()
 nimages['test'] = 22000
@@ -121,7 +112,7 @@ if len(sys.argv)<2:
     print('ERROR: model file missing')
     sys.exit()
     
-model = load_model(sys.argv[1])
+model = keras.models.load_model(sys.argv[1])
 
 print(model.summary())
 

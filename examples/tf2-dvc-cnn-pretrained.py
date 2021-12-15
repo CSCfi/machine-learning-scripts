@@ -20,13 +20,8 @@ import random
 import pathlib
 
 import tensorflow as tf
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import (Dense, Activation, Dropout, Conv2D,
-                                    Flatten, MaxPooling2D, InputLayer)
-from tensorflow.keras.preprocessing.image import (ImageDataGenerator, 
-                                                  array_to_img, 
-                                                  img_to_array, load_img)
+from tensorflow import keras
+from tensorflow.keras import layers
 from tensorflow.keras import applications, optimizers
 
 from tensorflow.keras.callbacks import TensorBoard
@@ -34,8 +29,8 @@ from tensorflow.keras.callbacks import TensorBoard
 import numpy as np
 
 print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', tf.keras.__version__,
-      'backend:', tf.keras.backend.backend())
+      'Keras version:', keras.__version__,
+      'backend:', keras.backend.backend())
 
 
 # ## Data
@@ -49,6 +44,7 @@ else:
     DATADIR = "/scratch/project_2003747/data/"
 
 datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/")
+assert os.path.exists(datapath), "Data not found at "+datapath
 
 nimages = dict()
 nimages['train'] = 2000
@@ -156,10 +152,6 @@ pretrained = 'VGG16'
 
 # ### Initialization
 
-model = Sequential()
-
-model.add(InputLayer(input_shape=INPUT_IMAGE_SIZE)) # possibly needed due to a bug in Keras
-
 if pretrained == 'VGG16':
     pt_model = applications.VGG16(weights='imagenet', include_top=False,      
                                   input_shape=INPUT_IMAGE_SIZE)
@@ -170,34 +162,34 @@ elif pretrained == 'MobileNet':
     pretrained_first_trainable_layer = 75
 else:
     assert 0, "Unknown model: "+pretrained
-    
+for layer in pt_model.layers:
+    layer.trainable = False
+
 pt_name = pt_model.name
 print('Using {} pre-trained model'.format(pt_name))
 
-for layer in pt_model.layers:
-    model.add(layer)
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
+x = pt_model(inputs)
 
-for layer in model.layers:
-    layer.trainable = False
+# We then stack our own, randomly initialized layers on top of the
+# pre-trained network.
 
+x = layers.Flatten()(x)
+x = layers.Dense(64, activation='relu')(x)
+outputs = layers.Dense(1, activation='sigmoid')(x)
+
+model = keras.Model(inputs=inputs, outputs=outputs,
+                    name="dvc-"+pt_name+"-pretrained")
 print(model.summary())
-
-# We then stack our own, randomly initialized layers on top of the pre-trained network.
-
-model.add(Flatten())
-model.add(Dense(64, activation='relu'))
-model.add(Dense(1, activation='sigmoid'))
 
 model.compile(loss='binary_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
 
-print(model.summary())
-
 # ### Learning 1: New layers
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "dvc-"+pt_name+"-reuse-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(os.getcwd(), "logs", "dvc-"+pt_name+"-reuse-"+
+                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
@@ -219,19 +211,20 @@ model.save(fname)
 # network so that it may adapt to our data. The learning rate should
 # be smaller than usual.
 
-for i, layer in enumerate(model.layers):
-    print(i, layer.name, layer.trainable)
-
-for layer in model.layers[pretrained_first_trainable_layer:]:
+print('Setting last pre-trained layers to be trainable')
+for layer in pt_model.layers[pretrained_first_trainable_layer:]:
     layer.trainable = True
-    print(layer.name, "now trainable")
-    
+for i, layer in enumerate(pt_model.layers):
+    print(i, layer.name, 'trainable:', layer.trainable)
+
+print(model.summary())    
+
 model.compile(loss='binary_crossentropy',
     optimizer=optimizers.RMSprop(lr=1e-5),
     metrics=['accuracy'])
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "dvc-"+pt_name+"-finetune-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(os.getcwd(), "logs", "dvc-"+pt_name+"-finetune-"+
+                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]

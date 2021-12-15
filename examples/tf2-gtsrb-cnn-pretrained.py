@@ -18,9 +18,8 @@ import datetime
 import pathlib
 
 import tensorflow as tf
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten
+from tensorflow import keras
+from tensorflow.keras import layers
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras import applications, optimizers
 
@@ -28,7 +27,7 @@ import numpy as np
 from PIL import Image
 
 print('Using Tensorflow version: {}, and Keras version: {}.'.format(
-    tf.__version__, tf.keras.__version__))
+    tf.__version__, keras.__version__))
 
 # # Data
 #
@@ -42,6 +41,7 @@ else:
     DATADIR = "/scratch/project_2003747/data/"
 
 datapath = os.path.join(DATADIR, "gtsrb/train-5535/")
+assert os.path.exists(datapath), "Data not found at "+datapath
 
 nimages = dict()
 (nimages['train'], nimages['validation']) = (5535, 999)
@@ -168,21 +168,27 @@ validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
 
 vgg16 = applications.VGG16(weights='imagenet', include_top=False,
                            input_shape=INPUT_IMAGE_SIZE)
-vgg16.trainable = False
+for layer in vgg16.layers:
+    layer.trainable = False
+
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
+x = vgg16(inputs)
 
 # We then stack our own, randomly initialized layers on top of the
 # VGG16 network.
 
-model = Sequential([vgg16,
-                    Flatten(),
-                    Dense(256, activation='relu'),
-                    Dense(43, activation='softmax')])
+x = layers.Flatten()(x)
+x = layers.Dense(256, activation='relu')(x)
+outputs = layers.Dense(43, activation='softmax')(x)
+
+model = keras.Model(inputs=inputs, outputs=outputs,
+                    name="gtsrb-vgg16-pretrained")
+print(model.summary())
 
 model.compile(loss='sparse_categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
 
-print(model.summary())
 
 
 # ### Learning 1: New layers
@@ -210,20 +216,17 @@ model.save(fname)
 # (`block5`) so that it may adapt to our data. The learning rate
 # should be smaller than usual.
 
-model.layers[0].trainable = True
-for i, layer in enumerate(model.layers[0].layers):
-    layer.trainable = i >= 15
+print('Setting last pre-trained layers to be trainable')
+for layer in vgg16.layers[15:]:
+    layer.trainable = True
+for i, layer in enumerate(vgg16.layers):
+    print(i, layer.name, 'trainable:', layer.trainable)
+
+print(model.summary())    
 
 model.compile(loss='sparse_categorical_crossentropy',
               optimizer=optimizers.RMSprop(lr=1e-5),
               metrics=['accuracy'])
-
-
-for i, layer in enumerate(model.layers):
-    print(i, layer.name, layer.trainable)
-    if len(layer.submodules) > 0:
-        for j, ll, in enumerate(layer.layers):
-            print('   ', j, ll.name, ll.trainable)
 
 logdir = os.path.join(os.getcwd(), "logs", "gtsrb-vgg16-finetune-" +
                       datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
