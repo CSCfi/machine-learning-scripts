@@ -1,5 +1,10 @@
 # Using Jupyter notebooks on Mahti
 
+**Note that there are on easier ways to use Jupyter notebooks on Puhti
+instead, see
+https://docs.csc.fi/support/tutorials/rstudio-or-jupyter-notebooks/ 
+for more information.**
+
 This page contains instructions on setting up a Jupyter notebooks server with GPU support in Mahti. It can be used e.g. to run GPU-enabled TensorFlow, Keras, or PyTorch notebooks.
 
 Please note that this is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.

@@ -1,5 +1,9 @@
 # Using Jupyter notebooks on Puhti
 
+**These instructions are outdated, see
+https://docs.csc.fi/support/tutorials/rstudio-or-jupyter-notebooks/
+for information on easier ways to use Jupyter notebooks on Puhti.**
+
 This page contains instructions on setting up a Jupyter notebooks server (with optional GPU support) in Puhti. It can be used e.g. to run GPU-enabled TensorFlow, Keras, PyTorch, or Rapids notebooks.
 
 Please note that this is a rather inelegant solution based on using two ssh connections, but can still perhaps be useful in some cases.
