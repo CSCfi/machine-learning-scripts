@@ -84,7 +84,6 @@ image_labels['validation'] = get_labels('validation')
 INPUT_IMAGE_SIZE = [256, 256]
 
 def load_image(path, label):
-    print(path, type(path))
     image = tf.io.read_file(path)
     image = tf.image.decode_jpeg(image, channels=3)
     return tf.image.resize(image, INPUT_IMAGE_SIZE), label
