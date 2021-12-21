@@ -1,13 +1,15 @@
+
+# coding: utf-8
+
 # # Traffic sign classification with CNNs
 #
 # In this notebook, we'll train a convolutional neural network (CNN,
-# ConvNet) to classify images of traffic signs from [The German
-# Traffic Sign Recognition
-# Benchmark](http://benchmark.ini.rub.de/?section=gtsrb&subsection=news)
-# using TensorFlow 2.0 / Keras. This notebook is largely based on the
-# blog post [Building powerful image classification models using very
-# little
-# data](https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html) by François Chollet.
+# ConvNet) to classify images of traffic signs from The German Traffic
+# Sign Recognition Benchmark using TensorFlow 2 / Keras. This notebook
+# is largely based on the blog post [Building powerful image
+# classification models using very little data]
+# (https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html)
+# by François Chollet.
 #
 # **Note that using a GPU with this notebook is highly recommended.**
 #
@@ -20,8 +22,9 @@ import pathlib
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras import applications, optimizers
+
+from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
 from PIL import Image
@@ -33,25 +36,18 @@ print('Using Tensorflow version: {}, and Keras version: {}.'.format(
 #
 # The training dataset consists of 5535 images of traffic signs of
 # varying size. There are 43 different types of traffic signs. In
-# addition, the validation consists of 999.
+# addition, the validation set consists of 999 images.
 
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2003747/data/"
+    DATADIR = "/scratch/project_2005299/data/"
 
+print('Using DATADIR', DATADIR)
 datapath = os.path.join(DATADIR, "gtsrb/train-5535/")
 assert os.path.exists(datapath), "Data not found at "+datapath
 
-nimages = dict()
-(nimages['train'], nimages['validation']) = (5535, 999)
-
-# ### Parameters
-
-INPUT_IMAGE_SIZE = [75, 75, 3]
-BATCH_SIZE = 50
-NUM_CLASSES = 43
-
+nimages = {'train':5535, 'validation':999}
 
 # ### Image paths and labels
 
@@ -64,7 +60,6 @@ def get_paths(dataset):
         "Found {} images, expected {}".format(image_count, nimages[dataset])
     return image_paths
 
-
 image_paths = dict()
 image_paths['train'] = get_paths('train')
 image_paths['validation'] = get_paths('validation')
@@ -74,111 +69,92 @@ label_names = sorted(item.name for item in
                      item.is_dir())
 label_to_index = dict((name, index) for index, name in enumerate(label_names))
 
-
 def get_labels(dataset):
     return [label_to_index[pathlib.Path(path).parent.name]
             for path in image_paths[dataset]]
-
 
 image_labels = dict()
 image_labels['train'] = get_labels('train')
 image_labels['validation'] = get_labels('validation')
 
+# ###Data loading
+#
+# We now define a function to load the images. The images are in PPM
+# format, so we use the PIL library. Also we need to resize the images
+# to a fixed size (INPUT_IMAGE_SIZE).
 
-# ### Data augmentation
-#
-# We need to resize all training and validation images to a fixed
-# size.
-#
-# Then, to make the most of our limited number of training examples,
-# we'll apply random transformations (crop and horizontal flip) to
-# them each time we are looping over them. This way, we "augment" our
-# training dataset to contain more data. There are various
-# transformations readily available in TensorFlow, see
-# [tf.image](https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/image)
-# for more information.
+INPUT_IMAGE_SIZE = [80, 80]
 
 def _load_image(path, label):
     image = Image.open(path.numpy())
     return np.array(image), label
 
-
 def load_image(path, label):
-    return tf.py_function(_load_image, (path, label), (tf.float32, tf.int32))
-
-
-def preprocess_image(image, augment):
+    image, label = tf.py_function(_load_image, (path, label),
+                                  (tf.float32, tf.int32))
     image.set_shape([None, None, None])
-    if augment:
-        image = tf.image.resize(image, [80, 80])
-        image = tf.image.random_crop(image, INPUT_IMAGE_SIZE)
-        #image = tf.image.random_flip_left_right(image)
-        image = tf.image.random_brightness(image, 0.1)
-        image = tf.clip_by_value(image, 0.0, 255.0)
-    else:
-        image = tf.image.resize(image, INPUT_IMAGE_SIZE[:2])
-    image /= 255.0  # normalize to [0,1] range
-    image.set_shape(INPUT_IMAGE_SIZE)
-    return image
-
-
-def process_and_augment_image(image, label):
     label.set_shape([])
-    return preprocess_image(image, True), label
-
-
-def process_and_not_augment_image(image, label):
-    label.set_shape([])
-    return preprocess_image(image, False), label
-
+    return tf.image.resize(image, INPUT_IMAGE_SIZE), label
 
 # ### TF Datasets
 #
-# Let's now define our [TF
-# `Dataset`s](https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/data/Dataset#class_dataset)
-# for training, validation, and test data. We augment only the
-# training data.
+# Let's now define our TF Datasets for training and validation data.
 
-train_dataset = tf.data.Dataset.from_tensor_slices((image_paths['train'], 
-                                                    image_labels['train']))
+BATCH_SIZE = 50
+
+train_dataset = tf.data.Dataset.from_tensor_slices(
+    (image_paths['train'], image_labels['train']))
 train_dataset = train_dataset.map(load_image,
-                                  num_parallel_calls=tf.data.experimental.AUTOTUNE)
-train_dataset = train_dataset.map(process_and_augment_image,
-                                  num_parallel_calls=tf.data.experimental.AUTOTUNE)
-train_dataset = train_dataset.shuffle(500).batch(BATCH_SIZE,
-                                                 drop_remainder=True)
+                                  num_parallel_calls=tf.data.AUTOTUNE)
+train_dataset = train_dataset.shuffle(2000).batch(BATCH_SIZE, drop_remainder=True)
+train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 validation_dataset = tf.data.Dataset.from_tensor_slices(
     (image_paths['validation'], image_labels['validation']))
 validation_dataset = validation_dataset.map(load_image,
-                                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
-validation_dataset = validation_dataset.map(process_and_not_augment_image,
-                                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
+                                            num_parallel_calls=tf.data.AUTOTUNE)
 validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
-
+validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 # ## Reuse a pre-trained CNN
 #
-# Another option is to reuse a pretrained network. Here we'll use the
-# [VGG16](https://keras.io/applications/#vgg16) network architecture
-# with weights learned using Imagenet. We remove the top layers and
-# freeze the pre-trained weights.
+# We now reuse a pretrained network. Here we'll use the [VGG16]
+# (https://keras.io/applications/#vgg16) network architecture
+# with weights learned using Imagenet. 
 #
 # ### Initialization
 
+# Due to the small number of training images, a large network will
+# easily overfit. Therefore, to make the most of our limited number of
+# training examples, we'll apply random augmentation transformations
+# (small random crop and contrast adjustment) to them each time we are
+# looping over them. This way, we "augment" our training dataset to
+# contain more data.
+#
+# The augmentation transformations are implemented as preprocessing
+# layers in Keras. There are various such layers readily available,
+# see https://keras.io/guides/preprocessing_layers/ for more
+# information.
+
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
+x = layers.Rescaling(scale=1./255)(inputs)
+
+x = layers.RandomCrop(75, 75)(x)
+x = layers.RandomContrast(0.1)(x)
+
+# We load the pretrained network, remove the top layers, and
+# freeze the pre-trained weights.
+
 vgg16 = applications.VGG16(weights='imagenet', include_top=False,
-                           input_shape=INPUT_IMAGE_SIZE)
+                           input_tensor=x)
 for layer in vgg16.layers:
     layer.trainable = False
-
-inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
-x = vgg16(inputs)
 
 # We then stack our own, randomly initialized layers on top of the
 # VGG16 network.
 
-x = layers.Flatten()(x)
-x = layers.Dense(256, activation='relu')(x)
+x = layers.Flatten()(vgg16.output)
+x = layers.Dense(64, activation='relu')(x)
 outputs = layers.Dense(43, activation='softmax')(x)
 
 model = keras.Model(inputs=inputs, outputs=outputs,
@@ -188,8 +164,6 @@ print(model.summary())
 model.compile(loss='sparse_categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
-
-
 
 # ### Learning 1: New layers
 
@@ -216,12 +190,14 @@ model.save(fname)
 # (`block5`) so that it may adapt to our data. The learning rate
 # should be smaller than usual.
 
-print('Setting last pre-trained layers to be trainable')
-for layer in vgg16.layers[15:]:
-    layer.trainable = True
-for i, layer in enumerate(vgg16.layers):
-    print(i, layer.name, 'trainable:', layer.trainable)
-
+train_layer = False
+for layer in model.layers:
+    if layer.name == "block5_conv1":
+        train_layer = True
+    layer.trainable = train_layer
+    
+for i, layer in enumerate(model.layers):
+    print(i, layer.name, "trainable:", layer.trainable)
 print(model.summary())    
 
 model.compile(loss='sparse_categorical_crossentropy',
