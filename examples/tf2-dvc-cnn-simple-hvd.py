@@ -56,7 +56,8 @@ if 'DATADIR' in os.environ:
 else:
     DATADIR = "/scratch/project_2005299/data/"
 
-print('Using DATADIR', DATADIR)
+if hvd.rank() == 0:
+    print('Using DATADIR', DATADIR)
 datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/")
 assert os.path.exists(datapath), "Data not found at "+datapath
 
@@ -98,7 +99,6 @@ image_labels['validation'] = get_labels('validation')
 INPUT_IMAGE_SIZE = [256, 256]
 
 def load_image(path, label):
-    print(path, type(path))
     image = tf.io.read_file(path)
     image = tf.image.decode_jpeg(image, channels=3)
     return tf.image.resize(image, INPUT_IMAGE_SIZE), label
@@ -172,7 +172,8 @@ model = keras.Model(inputs=inputs, outputs=outputs,
                     name="dvc-cnn-simple")
 
 # Horovod: adjust learning rate based on number of GPUs.
-opt = tf.keras.optimizers.RMSprop(0.001 * hvd.size())
+initial_lr = 0.001 * hvd.size()
+opt = tf.keras.optimizers.RMSprop(initial_lr)
 
 # Horovod: add Horovod DistributedOptimizer.
 opt = hvd.DistributedOptimizer(opt)
@@ -183,7 +184,6 @@ model.compile(loss='binary_crossentropy',
               optimizer=opt,
               metrics=['accuracy'],
               experimental_run_tf_function=False)
-
 if hvd.rank() == 0:
     print(model.summary())
 
@@ -207,17 +207,17 @@ callbacks = [
     # leads to worse final accuracy. Scale the learning rate `lr =
     # 1.0` ---> `lr = 1.0 * hvd.size()` during the first three
     # epochs. See https://arxiv.org/abs/1706.02677 for details.
-    hvd.callbacks.LearningRateWarmupCallback(warmup_epochs=3, verbose=1),
+    hvd.callbacks.LearningRateWarmupCallback(initial_lr, warmup_epochs=3,
+                                             verbose=1),
 ]
 
 # We'll use TensorBoard to visualize our progress during training.
-# Horovod: 
-logfile = "dvc-cnn-simple-{}-".format(hvd.rank())
-logfile = logfile+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-logdir = os.path.join(os.getcwd(), "logs", logfile)
-print('Rank:', hvd.rank(), 'TensorBoard log directory:', logdir)
-os.makedirs(logdir)
-callbacks.append(TensorBoard(log_dir=logdir))
+if hvd.rank() == 0:
+    logdir = os.path.join(os.getcwd(), "logs", "dvc-cnn-simple-hvd-"+
+                          datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    print('TensorBoard log directory:', logdir)
+    os.makedirs(logdir)
+    callbacks.append(TensorBoard(log_dir=logdir))
 
 # Horovod: reduce epochs
 epochs = 20 // hvd.size()
@@ -229,7 +229,6 @@ history = model.fit(train_dataset, epochs=epochs,
                     validation_data=validation_dataset,
                     callbacks=callbacks, verbose=verbose)
 
-# Horovod: 
 if hvd.rank() == 0:
     fname = "dvc-cnn-simple-hvd.h5"
     print('Saving model to', fname)
