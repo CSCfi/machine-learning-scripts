@@ -98,12 +98,12 @@ if len(sys.argv)<2:
     print('ERROR: model file missing')
     sys.exit()
     
+print('Loading model', sys.argv[1])
 model = keras.models.load_model(sys.argv[1])
-
 print(model.summary())
 
 # ### Inference
 
-print('Evaluating model', sys.argv[1])
+print('Evaluating model')
 scores = model.evaluate(test_dataset, verbose=2)
 print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
