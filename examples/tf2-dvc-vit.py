@@ -11,9 +11,10 @@
 # 
 # First, the needed imports.
 
-from transformers import ViTFeatureExtractor, TFViTForImageClassification
-from transformers.utils import check_min_version
 from transformers import __version__ as transformers_version
+from transformers.utils import check_min_version
+check_min_version("4.13.0.dev0")
+from transformers import ViTFeatureExtractor, TFViTForImageClassification
 
 import tensorflow as tf
 from tensorflow.keras.utils import plot_model
@@ -28,8 +29,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
-
-check_min_version("4.13.0.dev0")
 
 print('Using TensorFlow version:', tf.__version__,
       'Keras version:', tf.keras.__version__,
