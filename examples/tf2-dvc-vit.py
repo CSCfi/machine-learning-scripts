@@ -34,9 +34,6 @@ print('Using TensorFlow version:', tf.__version__,
       'Transformers version:', transformers_version)
 
 # ## Data
-#
-# The training dataset consists of 2000 images of dogs and cats, split
-# in half.  In addition, the validation set consists of 1000 images.
 
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
@@ -46,6 +43,10 @@ else:
 print('Using DATADIR', DATADIR)
 datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/")
 assert os.path.exists(datapath), "Data not found at "+datapath
+
+# The training dataset consists of 2000 images of dogs and cats, split
+# in half.  In addition, the validation set and test set consists of
+# 1000 and 22000 images, respectively.
 
 nimages = {'train':2000, 'validation':1000, 'test':22000}
 
