@@ -1,10 +1,12 @@
 # coding: utf-8
 
-# # Dogs-vs-cats classification with ViT
+# Traffic sign classification with ViT
 #
 # In this notebook, we'll finetune a [Vision Transformer]
-# (https://arxiv.org/abs/2010.11929) (ViT) to classify images of dogs
-# from images of cats using TensorFlow 2 / Keras and HuggingFace's
+# (https://arxiv.org/abs/2010.11929) (ViT) to classify images of
+# traffic signs from [The German Traffic Sign Recognition Benchmark]
+# (http://benchmark.ini.rub.de/?section=gtsrb&subsection=news) using
+# TensorFlow 2 / Keras and HuggingFace's
 # [Transformers](https://github.com/huggingface/transformers).
 #
 # **Note that using a GPU with this notebook is highly recommended.**
@@ -41,14 +43,15 @@ else:
     DATADIR = "/scratch/project_2005299/data/"
 
 print('Using DATADIR', DATADIR)
-datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/")
+datapath = os.path.join(DATADIR, "gtsrb/train-5535/")
 assert os.path.exists(datapath), "Data not found at "+datapath
 
-# The training dataset consists of 2000 images of dogs and cats, split
-# in half.  In addition, the validation set and test set consists of
-# 1000 and 22000 images, respectively.
+# The training dataset consists of 5535 images of traffic signs of
+# varying size. There are 43 different types of traffic signs. The
+# validation and test sets consist of 999 and 12630 images,
+# respectively.
 
-nimages = {'train':2000, 'validation':1000, 'test':22000}
+nimages = {'train':5535, 'validation':999, 'test':12630}
 
 # ### Image paths and labels
 
@@ -135,13 +138,13 @@ dataset_validation = dataset_validation.batch(BATCH_SIZE, drop_remainder=True)
 # ### Initialization
 
 model = TFViTForImageClassification.from_pretrained(
-    VITMODEL, num_labels=1, ignore_mismatched_sizes=True)
+    VITMODEL, num_labels=43, ignore_mismatched_sizes=True)
 
 LR = 1e-5
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=LR)
-loss = tf.keras.losses.BinaryCrossentropy(from_logits=False)
-metric = 'accuracy'
+loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+metric = tf.keras.metrics.SparseCategoricalAccuracy('accuracy')
 
 model.compile(optimizer=optimizer, loss=loss, metrics=[metric])
 
@@ -151,7 +154,7 @@ print(model.summary())
 
 logdir = os.path.join(
     os.getcwd(), "logs",
-    "dvc-vit-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    "gtsrb-vit-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
