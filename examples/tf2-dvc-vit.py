@@ -1,14 +1,14 @@
 # coding: utf-8
 
 # # Dogs-vs-cats classification with ViT
-# 
+#
 # In this notebook, we'll finetune a [Vision Transformer]
 # (https://arxiv.org/abs/2010.11929) (ViT) to classify images of dogs
 # from images of cats using TensorFlow 2 / Keras and HuggingFace's
 # [Transformers](https://github.com/huggingface/transformers).
-# 
+#
 # **Note that using a GPU with this notebook is highly recommended.**
-# 
+#
 # First, the needed imports.
 
 from transformers import __version__ as transformers_version
@@ -23,7 +23,6 @@ from PIL import Image
 
 import os, sys, datetime
 import pathlib
-from time import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -74,34 +73,21 @@ label_to_index = dict((name, index) for index,name in enumerate(label_names))
 def get_labels(dataset):
     return [label_to_index[pathlib.Path(path).parent.name]
             for path in image_paths[dataset]]
-    
+
 image_labels = dict()
 image_labels['train'] = get_labels('train')
 image_labels['validation'] = get_labels('validation')
 image_labels['test'] = get_labels('test')
 
 # ### Data loading
-# 
-# We now define a function to load the images. 
-
-def pil_loadimg(path: str):
-    with open(path, "rb") as f:
-        im = Image.open(f)
-        return im.convert("RGB")
-    
-def pil_loader(imglist: list):
-    res = []
-    for i in imglist:
-        res.append(pil_loadimg(i))
-    return res
-
-# Next we specify the pre-trained ViT model we are going to use. The
+#
+# First we specify the pre-trained ViT model we are going to use. The
 # model ["google/vit-base-patch16-224"]
 # (https://huggingface.co/google/vit-base-patch16-224) is pre-trained
 # on ImageNet-21k (14 million images, 21,843 classes) at resolution
 # 224x224, and fine-tuned on ImageNet 2012 (1 million images, 1,000
 # classes) at resolution 224x224.
-# 
+#
 # We'll use a pre-trained ViT feature extractor that matches the ViT
 # model to preprocess the input images.
 
@@ -109,36 +95,46 @@ VITMODEL = 'google/vit-base-patch16-224'
 
 feature_extractor = ViTFeatureExtractor.from_pretrained(VITMODEL)
 
-# We load and process the training and validation images:
+# Next we define functions to load and preprocess the images:
 
-print('Loading and processing training and validation images')
-t0 = time()
-inputs_train = feature_extractor(
-    images=pil_loader(image_paths['train']), return_tensors="tf")
-inputs_validation = feature_extractor(
-    images=pil_loader(image_paths['validation']), return_tensors="tf")
-print('Done in {:.2f} seconds'.format(time()-t0))
+def _load_and_process_image(path, label):
+    img = Image.open(path.numpy()).convert("RGB")
+    proc_img = feature_extractor(images=img,
+                                 return_tensors="np")['pixel_values']
+    return np.squeeze(proc_img), label
+
+def load_and_process_image(path, label):
+    image, label = tf.py_function(_load_and_process_image,
+                                  (path, label), (tf.float32, tf.int32))
+    image.set_shape([None, None, None])
+    label.set_shape([])
+    return image, label
 
 # ### TF Datasets
-# 
-# Let's now define our TF `Dataset`s for training and validation data. 
+#
+# Let's now define our TF Datasets for training and validation data.
 
 BATCH_SIZE = 32
 
-dataset_train = tf.data.Dataset.from_tensor_slices((inputs_train.data,
+dataset_train = tf.data.Dataset.from_tensor_slices((image_paths['train'],
                                                     image_labels['train']))
-dataset_train = dataset_train.shuffle(len(dataset_train)).batch(BATCH_SIZE,
-                                                                drop_remainder=True)
-dataset_validation = tf.data.Dataset.from_tensor_slices((inputs_validation.data,
-                                                         image_labels['validation']))
+dataset_train = dataset_train.map(load_and_process_image,
+                                  num_parallel_calls=tf.data.AUTOTUNE)
+dataset_train = dataset_train.shuffle(len(dataset_train)).batch(
+    BATCH_SIZE, drop_remainder=True)
+
+dataset_validation = tf.data.Dataset.from_tensor_slices(
+    (image_paths['validation'], image_labels['validation']))
+dataset_validation = dataset_validation.map(load_and_process_image,
+                                  num_parallel_calls=tf.data.AUTOTUNE)
 dataset_validation = dataset_validation.batch(BATCH_SIZE, drop_remainder=True)
 
 # ## Model
-# 
+#
 # ### Initialization
 
-model = TFViTForImageClassification.from_pretrained(VITMODEL, num_labels=1,
-                                                    ignore_mismatched_sizes=True)
+model = TFViTForImageClassification.from_pretrained(
+    VITMODEL, num_labels=1, ignore_mismatched_sizes=True)
 
 LR = 1e-5
 
@@ -152,8 +148,9 @@ print(model.summary())
 
 # ### Learning
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "dvc-vit-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(
+    os.getcwd(), "logs",
+    "dvc-vit-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
@@ -164,20 +161,15 @@ history = model.fit(dataset_train, validation_data=dataset_validation,
                     epochs=EPOCHS, verbose=2, callbacks=callbacks)
 
 # ### Inference
-# 
-# We now evaluate the model using the test set. First we'll load and
-# preprocess the test images and define the TF Dataset. Due to
-# memory issues, we limit the evaluation to N_test images.
+#
+# We now evaluate the model using the test set. First we'll define the
+# TF Dataset for the test images.
 
-N_test = 5000
-print('Loading and processing', N_test, 'test images')
-t0 = time()
-inputs_test = feature_extractor(images=pil_loader(image_paths['test'][:N_test]),
-                                return_tensors="tf")
-dataset_test = tf.data.Dataset.from_tensor_slices((inputs_test.data,
-                                                   image_labels['test'][:N_test]))
-dataset_test = dataset_test.batch(BATCH_SIZE, drop_remainder=True)
-print('Done in {:.2f} seconds'.format(time()-t0))
+dataset_test = tf.data.Dataset.from_tensor_slices((image_paths['test'],
+                                                   image_labels['test']))
+dataset_test = dataset_test.map(load_and_process_image,
+                                num_parallel_calls=tf.data.AUTOTUNE)
+dataset_test = dataset_test.batch(BATCH_SIZE, drop_remainder=False)
 
 scores = model.evaluate(dataset_test, verbose=2)
 print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
