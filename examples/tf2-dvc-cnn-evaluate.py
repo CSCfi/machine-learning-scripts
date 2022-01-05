@@ -4,9 +4,9 @@
 # 
 # This script is used to evaluate neural networks trained using
 # TensorFlow 2 / Keras to classify images of dogs from images of cats.
-# 
+#
 # **Note that using a GPU with this notebook is highly recommended.**
-# 
+#
 # First, the needed imports.
 
 import os, sys
@@ -20,8 +20,15 @@ print('Using Tensorflow version:', tf.__version__,
       'Keras version:', keras.__version__,
       'backend:', keras.backend.backend())
 
+try:
+    from tensorflow_hub import KerasLayer
+except:
+    KerasLayer = None
+    print('WARNING: Package tensorflow_hub not found, models based on '
+          'TF Hub components will not work.')
+
 # ## Data
-# 
+#
 # The test set consists of 22000 images.
 
 if 'DATADIR' in os.environ:
@@ -57,7 +64,7 @@ label_to_index = dict((name, index) for index,name in enumerate(label_names))
 def get_labels(dataset):
     return [label_to_index[pathlib.Path(path).parent.name]
             for path in image_paths[dataset]]
-    
+
 image_labels = dict()
 image_labels['test'] = get_labels('test')
 
@@ -97,9 +104,14 @@ test_dataset = test_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 if len(sys.argv)<2:
     print('ERROR: model file missing')
     sys.exit()
-    
+
 print('Loading model', sys.argv[1])
-model = keras.models.load_model(sys.argv[1])
+
+custom_objects = {}
+if KerasLayer is not None:
+    custom_objects["KerasLayer"] = KerasLayer
+with keras.utils.custom_object_scope(custom_objects):
+    model = keras.models.load_model(sys.argv[1])
 print(model.summary())
 
 # ### Inference
