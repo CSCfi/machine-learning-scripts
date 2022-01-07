@@ -5,9 +5,9 @@
 # This script is used to evaluate neural networks trained using
 # TensorFlow 2 / Keras to classify images of traffic signs from The
 # German Traffic Sign Recognition Benchmark.
-# 
+#
 # **Note that using a GPU with this notebook is highly recommended.**
-# 
+#
 # First, the needed imports.
 
 import os, sys
@@ -19,8 +19,16 @@ import numpy as np
 
 from PIL import Image
 
-print('Using Tensorflow version: {}, and Keras version: {}.'.format(
-    tf.__version__, tf.keras.__version__))
+print('Using Tensorflow version:', tf.__version__,
+      'Keras version:', keras.__version__,
+      'backend:', keras.backend.backend())
+
+try:
+    from tensorflow_hub import KerasLayer
+except:
+    KerasLayer = None
+    print('WARNING: Package tensorflow_hub not found, models based on '
+          'TF Hub components will not work.')
 
 # # Data
 #
@@ -63,7 +71,7 @@ def get_labels(dataset):
 image_labels = dict()
 image_labels['test'] = get_labels('test')
 
-# ###Data loading
+# ### Data loading
 #
 # We now define a function to load the images. The images are in PPM
 # format, so we use the PIL library. Also we need to resize the images
@@ -97,14 +105,21 @@ test_dataset = test_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 # ### Initialization
 
-if len(sys.argv) < 2:
+if len(sys.argv)<2:
     print('ERROR: model file missing')
     sys.exit()
 
-model = keras.models.load_model(sys.argv[1])
+print('Loading model', sys.argv[1])
 
+custom_objects = {}
+if KerasLayer is not None:
+    custom_objects["KerasLayer"] = KerasLayer
+with keras.utils.custom_object_scope(custom_objects):
+    model = keras.models.load_model(sys.argv[1])
 print(model.summary())
 
-print('Evaluating model', sys.argv[1])
+# ### Inference
+
+print('Evaluating model')
 scores = model.evaluate(test_dataset, verbose=2)
 print("Test set %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
