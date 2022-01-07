@@ -180,8 +180,6 @@ callbacks = [
         monitor="val_accuracy", patience=4, restore_best_weights=True),
     TensorBoard(log_dir=logdir)]
 
-%%time
-
 EPOCHS = 20
 
 history = model.fit(train_dataset, batch_size=BATCH_SIZE,
