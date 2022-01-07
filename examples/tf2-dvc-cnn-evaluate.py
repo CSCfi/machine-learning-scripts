@@ -82,20 +82,14 @@ def load_image(path, label):
 
 # ### TF Datasets
 #
-# Let's now define our TF Datasets for the test data. First the
-# Datasets contain the filenames of the images and the corresponding
-# labels.
-
-test_dataset = tf.data.Dataset.from_tensor_slices(
-    (image_paths['test'], image_labels['test']))
-
-# We then map() the filenames to the actual image data and decode the
-# images.
+# Let's now define our TF Datasets for the test data.
 
 BATCH_SIZE = 32
 
+test_dataset = tf.data.Dataset.from_tensor_slices(
+    (image_paths['test'], image_labels['test']))
 test_dataset = test_dataset.map(load_image,
-                                  num_parallel_calls=tf.data.AUTOTUNE)
+                                num_parallel_calls=tf.data.AUTOTUNE)
 test_dataset = test_dataset.batch(BATCH_SIZE, drop_remainder=False)
 test_dataset = test_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
