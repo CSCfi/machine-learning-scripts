@@ -21,8 +21,6 @@ import tensorflow_hub as hub
 
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras import applications, optimizers
-
 from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
