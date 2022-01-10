@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SBATCH="sbatch --parsable -t 15 --reservation= "
-SBATCH_TEST="$SBATCH -A project_2003959 --partition=test -t 15"
+SBATCH_TEST="$SBATCH --partition=test -t 15"
 SCRIPT="run.sh"
 SCRIPT_HVD="run-hvd.sh"
 
@@ -53,8 +53,12 @@ jid6=$($SBATCH $SCRIPT tf2-20ng-rnn.py)
 
 jid10=$($SBATCH $SCRIPT tf2-20ng-bert.py)
 
+# Exercise 7
+
 jid9a=$($SBATCH $SCRIPT_HVD tf2-dvc-cnn-simple-hvd.py)
 jid9b=$($SBATCH --dependency=afterany:$jid9a $SCRIPT tf2-dvc-cnn-evaluate.py dvc-cnn-simple-hvd.h5)
+
+# Summary
 
 jidx=$($SBATCH_TEST --dependency=afterany:$jid1b:$jid2b:$jid2c:$jid3b:$jid4b:$jid4c:$jid5:$jid6:$jid7b:$jid8b:$jid8c:$jid9b:$jid10:$jid11b:$jid12b:$jid13:$jid14 --job-name="summary" <<EOF
 #!/bin/bash
