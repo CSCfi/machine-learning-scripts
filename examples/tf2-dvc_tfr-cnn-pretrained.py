@@ -172,7 +172,7 @@ model.compile(loss='binary_crossentropy',
 
 # ### Learning 1: New layers
 
-logdir = os.path.join(os.getcwd(), "logs", "dvc-"+pt_name+"-reuse-"+
+logdir = os.path.join(os.getcwd(), "logs", "dvc_tfr-"+pt_name+"-reuse-"+
                       datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
@@ -184,7 +184,7 @@ history = model.fit(train_dataset, epochs=epochs,
                     validation_data=validation_dataset,
                     callbacks=callbacks, verbose=2)
 
-fname = "dvc-" + pt_name + "-reuse.h5"
+fname = "dvc_tfr-" + pt_name + "-reuse.h5"
 print('Saving model to', fname)
 model.save(fname)
 
