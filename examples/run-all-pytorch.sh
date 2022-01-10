@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SBATCH="sbatch --parsable -t 15 --reservation= "
-SBATCH_TEST="$SBATCH -A project_2003959 --partition=test -t 15"
+SBATCH="sbatch --parsable -t 30 --reservation= "
+SBATCH_TEST="$SBATCH --account=project_2005299 --partition=test -t 5"
 SCRIPT="run-pytorch.sh"
 SCRIPT_HVD="run-pytorch-hvd.sh"
 
