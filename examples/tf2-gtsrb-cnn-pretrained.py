@@ -201,7 +201,7 @@ for i, layer in enumerate(model.layers):
 print(model.summary())    
 
 model.compile(loss='sparse_categorical_crossentropy',
-              optimizer=optimizers.RMSprop(lr=1e-5),
+              optimizer=optimizers.RMSprop(learning_rate=1e-5),
               metrics=['accuracy'])
 
 logdir = os.path.join(os.getcwd(), "logs", "gtsrb-vgg16-finetune-" +
