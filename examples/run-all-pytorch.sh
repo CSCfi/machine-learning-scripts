@@ -25,10 +25,10 @@ jidx=$($SBATCH_TEST --dependency=afterany:$jid1:$jid2:$jid3:$jid4:$jid5:$jid6:$j
 #!/bin/bash
 echo "** pytorch_dvc_cnn ($jid1,$jid2) **"
 grep -h -A 1 '^Simple:' slurm-${jid1}.out
-grep -h -A 1 -E '^Pretrained:|^Finetuned:' --no-group-separator slurm-${jid1}.out
+grep -h -A 1 -E '^Pretrained:|^Finetuned:' --no-group-separator slurm-${jid2}.out
 echo
 echo "** pytorch_dvc_cnn_hvd ($jid8) **"
-grep -h -B 1 'Accuracy' --no-group-separator slurm-${jid8}.out
+grep -h -A 1 'Test set:' slurm-${jid8}.out
 echo
 echo "** pytorch_gtsrb_cnn ($jid3,$jid4) **"
 grep -h -A 1 '^Simple:' slurm-${jid3}.out
