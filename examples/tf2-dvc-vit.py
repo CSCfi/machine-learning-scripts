@@ -25,9 +25,6 @@ import os, sys, datetime
 import pathlib
 
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set()
 
 print('Using TensorFlow version:', tf.__version__,
       'Keras version:', tf.keras.__version__,
