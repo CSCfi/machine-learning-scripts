@@ -54,7 +54,7 @@ print('DECODED_IMAGES_TFRECORD is', DECODED_IMAGES_TFRECORD)
 # ### Data loading
 #
 # We now define a function to load the images. Also we need to resize
-# the images to a fixed size (INPUT_IMAGE_SIZE).
+# the images to a fixed size.
 
 N_SHARDS = 10
 
@@ -84,7 +84,7 @@ def load_image(example_proto):
 # We then map() the filenames to the actual image data and decode the images.
 # Note that we shuffle the training data.
 
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 suffix = "_decoded" if DECODED_IMAGES_TFRECORD else ""
 
