@@ -1,13 +1,11 @@
-
-# coding: utf-8
-
-# # Traffic sign classification with CNNs
+# # Traffic sign classification with BiT
 #
-# In this notebook, we'll train a convolutional neural network (CNN,
-# ConvNet) to classify images of traffic signs from The German Traffic
-# Sign Recognition Benchmark using TensorFlow 2 / Keras. This notebook
-# is largely based on the blog post [Building powerful image
-# classification models using very little data]
+# In this script, we'll finetune a [BigTransfer]
+# (https://arxiv.org/abs/1912.11370) (BiT) model from [TensorFlow
+# Hub](https://tfhub.dev/) to classify images of traffic signs from
+# The German Traffic Sign Recognition Benchmark using TensorFlow 2 /
+# Keras. This notebook is largely based on the blog post [Building
+# powerful image classification models using very little data]
 # (https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html)
 # by François Chollet.
 #
@@ -15,15 +13,14 @@
 #
 # First, the needed imports.
 
-import os
-import datetime
+import os, datetime
 import pathlib
 
 import tensorflow as tf
+import tensorflow_hub as hub
+
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras import applications, optimizers
-
 from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
@@ -116,25 +113,30 @@ validation_dataset = validation_dataset.map(load_image,
 validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
 validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
-# ## Reuse a pre-trained CNN
-#
-# We now reuse a pretrained network. Here we'll use the [VGG16]
-# (https://keras.io/applications/#vgg16) network architecture
-# with weights learned using Imagenet. 
+# ## BiT
 #
 # ### Initialization
-
-# Due to the small number of training images, a large network will
-# easily overfit. Therefore, to make the most of our limited number of
-# training examples, we'll apply random augmentation transformations
-# (small random crop and contrast adjustment) to them each time we are
-# looping over them. This way, we "augment" our training dataset to
-# contain more data.
 #
-# The augmentation transformations are implemented as preprocessing
-# layers in Keras. There are various such layers readily available,
-# see https://keras.io/guides/preprocessing_layers/ for more
-# information.
+# Now we specify the pre-trained BiT model we are going to use. The
+# model ["BiT-M R50x1"] (https://tfhub.dev/google/bit/m-r50x1/1) is
+# pre-trained on ImageNet-21k (14 million images, 21,843 classes). It
+# outputs 2048-dimensional feature vectors.
+
+bit_model_url = "https://tfhub.dev/google/bit/m-r50x1/1"
+bit_model = hub.KerasLayer(bit_model_url)
+
+# First we'll apply random augmentation transformations (small random
+# crop and contrast adjustment) to them each time we are looping over
+# them. This way, we "augment" our training dataset to contain more
+# data. The augmentation transformations are implemented as
+# preprocessing layers in Keras. There are various such layers readily
+# available, see https://keras.io/guides/preprocessing_layers/ for
+# more information.
+#
+# Then we add the BiT model as a layer and finally add the output
+# layer with a single unit and sigmoid activation. Note that we
+# initialize the output layer to all zeroes as instructed in
+# https://keras.io/examples/vision/bit/.
 
 inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
 x = layers.Rescaling(scale=1./255)(inputs)
@@ -142,81 +144,50 @@ x = layers.Rescaling(scale=1./255)(inputs)
 x = layers.RandomCrop(75, 75)(x)
 x = layers.RandomContrast(0.1)(x)
 
-# We load the pretrained network, remove the top layers, and
-# freeze the pre-trained weights.
+x = bit_model(x)
 
-vgg16 = applications.VGG16(weights='imagenet', include_top=False,
-                           input_tensor=x)
-for layer in vgg16.layers:
-    layer.trainable = False
-
-# We then stack our own, randomly initialized layers on top of the
-# VGG16 network.
-
-x = layers.Flatten()(vgg16.output)
-x = layers.Dense(64, activation='relu')(x)
-outputs = layers.Dense(43, activation='softmax')(x)
+outputs = layers.Dense(43, kernel_initializer="zeros",
+                       activation='softmax')(x)
 
 model = keras.Model(inputs=inputs, outputs=outputs,
-                    name="gtsrb-vgg16-pretrained")
+                    name="gtsrb-bit")
+
+learning_rate, momentum = 0.003, 0.9
+
+optimizer = keras.optimizers.SGD(learning_rate=learning_rate,
+                                 momentum=momentum)
+loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+
+model.compile(loss=loss_fn, optimizer=optimizer,
+              metrics=['accuracy'])
+
 print(model.summary())
 
-model.compile(loss='sparse_categorical_crossentropy',
-              optimizer='rmsprop',
-              metrics=['accuracy'])
-
-# ### Learning 1: New layers
-
-logdir = os.path.join(os.getcwd(), "logs", "gtsrb-vgg16-" +
-                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-print('TensorBoard log directory:', logdir)
-os.makedirs(logdir)
-callbacks = [TensorBoard(log_dir=logdir)]
-
-epochs = 20
-
-history = model.fit(train_dataset, epochs=epochs,
-                    validation_data=validation_dataset,
-                    verbose=2, callbacks=callbacks)
-
-fname = "gtsrb-vgg16-reuse.h5"
-print('Saving model to', fname)
-model.save(fname)
-
-# ### Learning 2: Fine-tuning
+# ### Learning
 #
-# Once the top layers have learned some reasonable weights, we can
-# continue training by unfreezing the last convolution block of VGG16
-# (`block5`) so that it may adapt to our data. The learning rate
-# should be smaller than usual.
+# We'll set up two callbacks. *EarlyStopping* is used to stop training
+# when the monitored metric has stopped improving. *TensorBoard* is
+# used to visualize our progress during training.
 
-train_layer = False
-for layer in model.layers:
-    if layer.name == "block5_conv1":
-        train_layer = True
-    layer.trainable = train_layer
-    
-for i, layer in enumerate(model.layers):
-    print(i, layer.name, "trainable:", layer.trainable)
-print(model.summary())    
-
-model.compile(loss='sparse_categorical_crossentropy',
-              optimizer=optimizers.RMSprop(learning_rate=1e-5),
-              metrics=['accuracy'])
-
-logdir = os.path.join(os.getcwd(), "logs", "gtsrb-vgg16-finetune-" +
-                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(
+    os.getcwd(), "logs",
+    "gtsrb-bit-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
-callbacks = [TensorBoard(log_dir=logdir)]
 
-epochs = 20
+callbacks = [
+    keras.callbacks.EarlyStopping(
+        monitor="val_accuracy", patience=4, restore_best_weights=True),
+    TensorBoard(log_dir=logdir)]
 
-history = model.fit(train_dataset, epochs=epochs,
+EPOCHS = 20
+
+history = model.fit(train_dataset, batch_size=BATCH_SIZE,
+                    epochs=EPOCHS,
                     validation_data=validation_dataset,
-                    verbose=2, callbacks=callbacks)
+                    callbacks=callbacks)
 
-fname = "gtsrb-vgg16-finetune.h5"
-
+fname = "gtsrb-bit.h5"
 print('Saving model to', fname)
 model.save(fname)
+print('All done')

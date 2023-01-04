@@ -1,11 +1,11 @@
 
 # coding: utf-8
 
-# # Dogs-vs-cats classification with CNNs
-# 
-# In this notebook, we'll train a convolutional neural network (CNN,
-# ConvNet) to classify images of dogs from images of cats using
-# TensorFlow 2.0 / Keras. This notebook is largely based on the blog
+# # The Oxford-IIIT Pet Dataset classification with CNNs
+#
+# In this script, we'll train a convolutional neural network (CNN,
+# ConvNet) to classify images of breeds of dogs and cats using
+# TensorFlow 2 / Keras. This script is largely based on the blog
 # post [Building powerful image classification models using very
 # little data]
 # (https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html)
@@ -41,53 +41,41 @@ print('Using Tensorflow version:', tf.__version__,
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2005299/data/"
+    DATADIR = "/scratch/project_xxx/data/"
 
 print('Using DATADIR', DATADIR)
-datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/")
+datapath = os.path.join(DATADIR, "pets/")
 assert os.path.exists(datapath), "Data not found at "+datapath
 
-nimages = {'train':2000, 'validation':1000}
-
-# ### Image paths and labels
-
-def get_paths(dataset):
-    data_root = pathlib.Path(datapath+dataset)
-    image_paths = list(data_root.glob('*/*'))
-    image_paths = [str(path) for path in image_paths]
-    image_count = len(image_paths)
-    assert image_count == nimages[dataset], \
-        "Found {} images, expected {}".format(image_count, nimages[dataset])
-    return image_paths
-
-image_paths = dict()
-image_paths['train'] = get_paths('train')
-image_paths['validation'] = get_paths('validation')
-
-label_names = sorted(item.name for item in
-                     pathlib.Path(datapath+'train').glob('*/')
-                     if item.is_dir())
-label_to_index = dict((name, index) for index,name in enumerate(label_names))
-
-def get_labels(dataset):
-    return [label_to_index[pathlib.Path(path).parent.name]
-            for path in image_paths[dataset]]
-    
-image_labels = dict()
-image_labels['train'] = get_labels('train')
-image_labels['validation'] = get_labels('validation')
+if 'DECODED_IMAGES_TFRECORD' in os.environ:
+    DECODED_IMAGES_TFRECORD = True
+else:
+    DECODED_IMAGES_TFRECORD = False
+print('DECODED_IMAGES_TFRECORD is', DECODED_IMAGES_TFRECORD)
 
 # ### Data loading
 #
 # We now define a function to load the images. Also we need to resize
-# the images to a fixed size (INPUT_IMAGE_SIZE).
+# the images to a fixed size.
 
-INPUT_IMAGE_SIZE = [256, 256]
+N_SHARDS = 10
 
-def load_image(path, label):
-    image = tf.io.read_file(path)
+def preprocess_image(image):
+    if DECODED_IMAGES_TFRECORD:
+        return tf.io.parse_tensor(image, tf.uint8)
     image = tf.image.decode_jpeg(image, channels=3)
-    return tf.image.resize(image, INPUT_IMAGE_SIZE), label
+    image = tf.image.resize(image, [256, 256])
+    return tf.cast(image, tf.uint8)
+
+feature_description = {
+    "image": tf.io.FixedLenFeature((), tf.string),
+    "filename": tf.io.FixedLenFeature((), tf.string),
+    "classname": tf.io.FixedLenFeature((), tf.string),
+    "classidx": tf.io.FixedLenFeature((), tf.int64)}
+
+def load_image(example_proto):
+    ex = tf.io.parse_single_example(example_proto, feature_description)
+    return (preprocess_image(ex["image"]), ex["classidx"])
 
 # ### TF Datasets
 #
@@ -95,25 +83,20 @@ def load_image(path, label):
 # data. First the Datasets contain the filenames of the images and the
 # corresponding labels.
 
-train_dataset = tf.data.Dataset.from_tensor_slices(
-    (image_paths['train'], image_labels['train']))
-validation_dataset = tf.data.Dataset.from_tensor_slices(
-    (image_paths['validation'], image_labels['validation']))
-
 # We then map() the filenames to the actual image data and decode the images.
 # Note that we shuffle the training data.
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 
+suffix = "_decoded" if DECODED_IMAGES_TFRECORD else ""
+
+train_filenames = [datapath+"/images{}_{:03d}.tfrec".format(suffix, i)
+                   for i in range(N_SHARDS)]
+train_dataset = tf.data.TFRecordDataset(train_filenames)
 train_dataset = train_dataset.map(load_image,
                                   num_parallel_calls=tf.data.AUTOTUNE)
 train_dataset = train_dataset.shuffle(2000).batch(BATCH_SIZE, drop_remainder=True)
 train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-
-validation_dataset = validation_dataset.map(load_image,
-                                            num_parallel_calls=tf.data.AUTOTUNE)
-validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
-validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 # ## Reuse a pre-trained CNN
 # 
@@ -140,7 +123,7 @@ pretrained = 'VGG16'
 # see https://keras.io/guides/preprocessing_layers/ for more
 # information.
 
-inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
+inputs = keras.Input(shape=[256, 256, 3])
 x = layers.Rescaling(scale=1./255)(inputs)
 
 x = layers.RandomCrop(160, 160)(x)
@@ -152,11 +135,9 @@ x = layers.RandomFlip(mode="horizontal")(x)
 if pretrained == 'VGG16':
     pt_model = applications.VGG16(weights='imagenet', include_top=False,      
                                   input_tensor=x)
-    finetuning_first_trainable_layer = "block5_conv1" 
 elif pretrained == 'MobileNet':
     pt_model = applications.MobileNet(weights='imagenet', include_top=False,
                                       input_tensor=x)
-    finetuning_first_trainable_layer = "conv_dw_12"
 else:
     assert 0, "Unknown model: "+pretrained
     
@@ -172,68 +153,30 @@ for layer in pt_model.layers:
 
 x = layers.Flatten()(pt_model.output)
 x = layers.Dense(64, activation='relu')(x)
-outputs = layers.Dense(1, activation='sigmoid')(x)
+outputs = layers.Dense(37, activation='softmax')(x)
 
 model = keras.Model(inputs=inputs, outputs=outputs,
-                    name="dvc-"+pt_name+"-pretrained")
+                    name="pets-"+pt_name+"-pretrained")
 print(model.summary())
 
-model.compile(loss='binary_crossentropy',
+model.compile(loss='sparse_categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
 
-# ### Learning 1: New layers
+# ### Learning
 
-logdir = os.path.join(os.getcwd(), "logs", "dvc-"+pt_name+"-reuse-"+
+logdir = os.path.join(os.getcwd(), "logs", "pets_tfr"+suffix+"-"+pt_name+"-reuse-"+
                       datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
 
-epochs = 20
+epochs = 10
 
 history = model.fit(train_dataset, epochs=epochs,
-                    validation_data=validation_dataset,
                     callbacks=callbacks, verbose=2)
 
-fname = "dvc-" + pt_name + "-reuse.h5"
+fname = "pets-" + pt_name + "-reuse.h5"
 print('Saving model to', fname)
 model.save(fname)
-
-# ### Learning 2: Fine-tuning
-# 
-# Once the top layers have learned some reasonable weights, we can
-# continue training by unfreezing the last blocks of the pre-trained
-# network so that it may adapt to our data. The learning rate should
-# be smaller than usual.
-
-print('Setting last pre-trained layers to be trainable')
-train_layer = False
-for layer in model.layers:
-    if layer.name == finetuning_first_trainable_layer:
-        train_layer = True
-    layer.trainable = train_layer
-    
-for i, layer in enumerate(model.layers):
-    print(i, layer.name, "trainable:", layer.trainable)    
-print(model.summary())    
-
-model.compile(loss='binary_crossentropy',
-    optimizer=optimizers.RMSprop(learning_rate=1e-5),
-    metrics=['accuracy'])
-
-logdir = os.path.join(os.getcwd(), "logs", "dvc-"+pt_name+"-finetune-"+
-                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-print('TensorBoard log directory:', logdir)
-os.makedirs(logdir)
-callbacks = [TensorBoard(log_dir=logdir)]
-
-epochs = 20
-
-history = model.fit(train_dataset, epochs=epochs,
-                    validation_data=validation_dataset,
-                    callbacks=callbacks, verbose=2)
-
-fname = "dvc-" + pt_name + "-finetune.h5"
-print('Saving model to', fname)
-model.save(fname)
+print('All done')

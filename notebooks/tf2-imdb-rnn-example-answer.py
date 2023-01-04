@@ -7,4 +7,8 @@ x = layers.Dropout(0.2)(x)
 x = layers.LSTM(lstm_units, return_sequences=True)(x)
 x = layers.LSTM(lstm_units)(x)
 
+## With bidirectional layers:
+#x = layers.Bidirectional(layers.LSTM(lstm_units, return_sequences=True))(x)
+#x = layers.Bidirectional(layers.LSTM(lstm_units))(x)
+
 ex1_outputs = layers.Dense(1, activation='sigmoid')(x)

@@ -36,46 +36,28 @@ print('Using Tensorflow version:', tf.__version__,
 # ## Data
 # 
 # The training dataset consists of 2000 images of dogs and cats, split
-# in half.  In addition, the validation set consists of 1000 images,
+# in half.  In addition, the validation set consists of 1000 images.
 
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2003747/data/"
+    DATADIR = "/scratch/project_2005299/data/"
 
+print('Using DATADIR', DATADIR)
 datapath = os.path.join(DATADIR, "dogs-vs-cats/train-2000/tfrecord/")
 assert os.path.exists(datapath), "Data not found at "+datapath
 
-nimages = dict()
-nimages['train'] = 2000
-nimages['validation'] = 1000
+# ### Data loading
+#
+# We now define a function to load the images from TFRecord
+# entries. Also we need to resize the images to a fixed size
+# (INPUT_IMAGE_SIZE).
 
-# ### Data augmentation
-# 
-# We need to resize all training and validation images to a fixed
-# size. Here we'll use 160x160 pixels.
-# 
-# Then, to make the most of our limited number of training examples,
-# we'll apply random transformations (crop and horizontal flip) to
-# them each time we are looping over them. This way, we "augment" our
-# training dataset to contain more data. There are various
-# transformations readily available in TensorFlow, see tf.image
-# (https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/image)
-# for more information.
+INPUT_IMAGE_SIZE = [256, 256]
 
-INPUT_IMAGE_SIZE = [160, 160, 3]
-
-def preprocess_image(image, augment):
+def preprocess_image(image):
     image = tf.image.decode_jpeg(image, channels=3)
-    if augment:
-        image = tf.image.resize(image, [256, 256])
-        image = tf.image.random_crop(image, INPUT_IMAGE_SIZE)
-        if random.random() < 0.5:
-            image = tf.image.flip_left_right(image)
-    else:
-        image = tf.image.resize(image, INPUT_IMAGE_SIZE[:2])
-    image /= 255.0  # normalize to [0,1] range
-    return image
+    return tf.image.resize(image, INPUT_IMAGE_SIZE)
 
 feature_description = {
     "image/encoded": tf.io.FixedLenFeature((), tf.string, default_value=""),
@@ -88,23 +70,15 @@ feature_description = {
     "image/class/label": tf.io.FixedLenFeature((), tf.int64, default_value=0),
     "image/class/text": tf.io.FixedLenFeature((), tf.string, default_value="")}
 
-def parse_and_augment_image(example_proto):
+def load_image(example_proto):
     ex = tf.io.parse_single_example(example_proto, feature_description)
-    return (preprocess_image(ex["image/encoded"], True),
-            ex["image/class/label"]-1)
-
-def parse_and_not_augment_image(example_proto):
-    ex = tf.io.parse_single_example(example_proto, feature_description)
-    return (preprocess_image(ex["image/encoded"], False),
-            ex["image/class/label"]-1)
+    return (preprocess_image(ex["image/encoded"]), ex["image/class/label"]-1)
 
 # ### TF Datasets
-# 
-# Let's now define our TF Datasets
-# (https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/data/Dataset#class_dataset)
-# for training and validation data. We use the TFRecordDataset
-# (https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/data/TFRecordDataset)
-# class, which reads the data records from multiple TFRecord files.
+#
+# Let's now define our TF Datasets for training and validation data.
+# We use the TFRecordDataset class, which reads the data records from
+# multiple TFRecord files.
 
 train_filenames = [datapath+"train-{0:05d}-of-00004".format(i)
                    for i in range(4)]
@@ -114,58 +88,77 @@ validation_filenames = [datapath+"validation-{0:05d}-of-00002".format(i)
                         for i in range(2)]
 validation_dataset = tf.data.TFRecordDataset(validation_filenames)
 
-# We then map() the TFRecord examples to the actual image data and
-# decode the images.  Note that we shuffle and augment only the
-# training data.
+# We then map() the filenames to the actual image data and decode the images.
+# Note that we shuffle the training data.
 
 BATCH_SIZE = 32
 
-train_dataset = train_dataset.map(parse_and_augment_image, num_parallel_calls=10)
+train_dataset = train_dataset.map(load_image,
+                                  num_parallel_calls=tf.data.AUTOTUNE)
 train_dataset = train_dataset.shuffle(2000).batch(BATCH_SIZE, drop_remainder=True)
-train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
-validation_dataset = validation_dataset.map(parse_and_not_augment_image,
-                                            num_parallel_calls=10)
+validation_dataset = validation_dataset.map(load_image,
+                                            num_parallel_calls=tf.data.AUTOTUNE)
 validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
-validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 # ## Reuse a pre-trained CNN
 # 
 # We now reuse a pretrained network.  Here we'll use one of the
 # pre-trained networks available from Keras
-# (https://keras.io/applications/).  We remove the top layers and
-# freeze the pre-trained weights.
-# 
+# (https://keras.io/applications/).
+
+# ### Initialization
+
 # We first choose either VGG16 or MobileNet as our pretrained network:
 
 pretrained = 'VGG16'
 #pretrained = 'MobileNet'
 
-# ### Initialization
+# Due to the small number of training images, a large network will
+# easily overfit. Therefore, to make the most of our limited number of
+# training examples, we'll apply random augmentation transformations
+# (crop and horizontal flip) to them each time we are looping over
+# them. This way, we "augment" our training dataset to contain more
+# data.
+#
+# The augmentation transformations are implemented as preprocessing
+# layers in Keras. There are various such layers readily available,
+# see https://keras.io/guides/preprocessing_layers/ for more
+# information.
+
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
+x = layers.Rescaling(scale=1./255)(inputs)
+
+x = layers.RandomCrop(160, 160)(x)
+x = layers.RandomFlip(mode="horizontal")(x)
+
+# We load the pretrained network, remove the top layers, and
+# freeze the pre-trained weights.
 
 if pretrained == 'VGG16':
     pt_model = applications.VGG16(weights='imagenet', include_top=False,      
-                                  input_shape=INPUT_IMAGE_SIZE)
-    pretrained_first_trainable_layer = 15 
+                                  input_tensor=x)
+    finetuning_first_trainable_layer = "block5_conv1" 
 elif pretrained == 'MobileNet':
     pt_model = applications.MobileNet(weights='imagenet', include_top=False,
-                                      input_shape=INPUT_IMAGE_SIZE)
-    pretrained_first_trainable_layer = 75
+                                      input_tensor=x)
+    finetuning_first_trainable_layer = "conv_dw_12"
 else:
     assert 0, "Unknown model: "+pretrained
-for layer in pt_model.layers:
-    layer.trainable = False
     
 pt_name = pt_model.name
-print('Using {} pre-trained model'.format(pt_name))
+print('Using "{}" pre-trained model with {} layers'
+      .format(pt_name, len(pt_model.layers)))
 
-inputs = keras.Input(shape=INPUT_IMAGE_SIZE)
-x = pt_model(inputs)
+for layer in pt_model.layers:
+    layer.trainable = False
 
 # We then stack our own, randomly initialized layers on top of the
 # pre-trained network.
 
-x = layers.Flatten()(x)
+x = layers.Flatten()(pt_model.output)
 x = layers.Dense(64, activation='relu')(x)
 outputs = layers.Dense(1, activation='sigmoid')(x)
 
@@ -185,7 +178,7 @@ print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
 callbacks = [TensorBoard(log_dir=logdir)]
 
-epochs = 10
+epochs = 20
 
 history = model.fit(train_dataset, epochs=epochs,
                     validation_data=validation_dataset,
@@ -203,13 +196,16 @@ model.save(fname)
 # be smaller than usual.
 
 print('Setting last pre-trained layers to be trainable')
-for layer in pt_model.layers[pretrained_first_trainable_layer:]:
-    layer.trainable = True
-for i, layer in enumerate(pt_model.layers):
-    print(i, layer.name, 'trainable:', layer.trainable)
-
-print(model.summary())    
+train_layer = False
+for layer in model.layers:
+    if layer.name == finetuning_first_trainable_layer:
+        train_layer = True
+    layer.trainable = train_layer
     
+for i, layer in enumerate(model.layers):
+    print(i, layer.name, "trainable:", layer.trainable)    
+print(model.summary())    
+
 model.compile(loss='binary_crossentropy',
     optimizer=optimizers.RMSprop(lr=1e-5),
     metrics=['accuracy'])
