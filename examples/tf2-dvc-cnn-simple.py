@@ -22,7 +22,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.callbacks import TensorBoard, CSVLogger
 
 import numpy as np
 
@@ -166,11 +166,12 @@ print(model.summary())
 
 # We'll use TensorBoard to visualize our progress during training.
 
-logdir = os.path.join(os.getcwd(), "logs", "dvc-cnn-simple-"+
-                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logstr = ("dvc-cnn-simple-"+
+          datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+logdir = os.path.join(os.getcwd(), "logs", logstr)
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
-callbacks = [TensorBoard(log_dir=logdir)]
+callbacks = [TensorBoard(log_dir=logdir), CSVLogger(logstr+".csv")]
 
 epochs = 20
 
