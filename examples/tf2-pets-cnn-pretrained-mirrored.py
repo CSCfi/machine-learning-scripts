@@ -33,7 +33,7 @@ print('Using Tensorflow version:', tf.__version__,
       'backend:', keras.backend.backend())
 
 gpus = tf.config.list_physical_devices('GPU')
-print('Number of GPUs found:', len(gpus)
+print('Number of GPUs found:', len(gpus))
 
 # ## Data
 # 
