@@ -56,15 +56,16 @@ print('DECODED_IMAGES_TFRECORD is', DECODED_IMAGES_TFRECORD)
 # ### Data loading
 #
 # We now define a function to load the images. Also we need to resize
-# the images to a fixed size.
+# the images to a fixed size (INPUT_IMAGE_SIZE).
 
+INPUT_IMAGE_SIZE = [256, 256]
 N_SHARDS = 10
 
 def preprocess_image(image):
     if DECODED_IMAGES_TFRECORD:
         return tf.io.parse_tensor(image, tf.uint8)
     image = tf.image.decode_jpeg(image, channels=3)
-    image = tf.image.resize(image, [256, 256])
+    image = tf.image.resize(image, INPUT_IMAGE_SIZE)
     return tf.cast(image, tf.uint8)
 
 feature_description = {
@@ -123,7 +124,7 @@ pretrained = 'VGG16'
 # see https://keras.io/guides/preprocessing_layers/ for more
 # information.
 
-inputs = keras.Input(shape=[256, 256, 3])
+inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
 x = layers.Rescaling(scale=1./255)(inputs)
 
 x = layers.RandomCrop(160, 160)(x)
