@@ -40,10 +40,13 @@ options = tf.distribute.experimental.CommunicationOptions(
 strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver,
                                                      communication_options=options)
 
+gpus = tf.config.list_physical_devices('GPU')
+print('Number of GPUs found:', len(gpus))
 print('Number of replicas:', strategy.num_replicas_in_sync)
 print('Cluster specification:', slurm_resolver.cluster_spec())
 print('Task info:', slurm_resolver.get_task_info())
-print('Number of GPUs:', slurm_resolver.num_accelerators()['GPU'])
+n_gpus = slurm_resolver.num_accelerators()['GPU']
+print('Number of GPUs:', n_gpus)
 
 # ## Data
 # 
@@ -115,7 +118,9 @@ train_dataset = tf.data.Dataset.from_tensor_slices(
 # We then map() the filenames to the actual image data and decode the images.
 # Note that we shuffle the training data.
 
-BATCH_SIZE = 64*2
+BATCH_SIZE = 64
+if len(n_gpus)>1:
+      BATCH_SIZE *= len(n_gpus)
 
 train_dataset = train_dataset.map(load_image,
                                   num_parallel_calls=tf.data.AUTOTUNE)
