@@ -80,7 +80,11 @@ image_labels['train'] = get_labels('train')
 # We now define a function to load the images. Also we need to resize
 # the images to a fixed size (INPUT_IMAGE_SIZE).
 
-INPUT_IMAGE_SIZE = [256, 256]
+AUGMENT = False
+if AUGMENT:
+    INPUT_IMAGE_SIZE = [256, 256]
+else:
+    INPUT_IMAGE_SIZE = [160, 160]
 
 def load_image(path, label):
     image = tf.io.read_file(path)
@@ -133,9 +137,9 @@ pretrained = 'VGG16'
 
 inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
 x = layers.Rescaling(scale=1./255)(inputs)
-
-x = layers.RandomCrop(160, 160)(x)
-x = layers.RandomFlip(mode="horizontal")(x)
+if AUGMENT:
+    x = layers.RandomCrop(160, 160)(x)
+    x = layers.RandomFlip(mode="horizontal")(x)
 
 # We load the pretrained network, remove the top layers, and
 # freeze the pre-trained weights.

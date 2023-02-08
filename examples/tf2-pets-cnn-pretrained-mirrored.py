@@ -82,7 +82,11 @@ image_labels['train'] = get_labels('train')
 # We now define a function to load the images. Also we need to resize
 # the images to a fixed size (INPUT_IMAGE_SIZE).
 
-INPUT_IMAGE_SIZE = [256, 256]
+AUGMENT = False
+if AUGMENT:
+    INPUT_IMAGE_SIZE = [256, 256]
+else:
+    INPUT_IMAGE_SIZE = [160, 160]
 
 def load_image(path, label):
     image = tf.io.read_file(path)
@@ -106,7 +110,7 @@ if len(gpus)>1:
       BATCH_SIZE *= len(gpus)
 
 train_dataset = train_dataset.map(load_image,
-                                  num_parallel_calls=tf.data.AUTOTUNE).repeat()
+                                  num_parallel_calls=tf.data.AUTOTUNE) #.repeat()
 train_dataset = train_dataset.shuffle(2000).batch(BATCH_SIZE, drop_remainder=True)
 train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
@@ -136,15 +140,15 @@ pretrained = 'VGG16'
 # information.
 
 strategy = tf.distribute.MirroredStrategy()
-dist_train_dataset = strategy.experimental_distribute_dataset(train_dataset)
+#dist_train_dataset = strategy.experimental_distribute_dataset(train_dataset)
 
 with strategy.scope():
 
     inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
     x = layers.Rescaling(scale=1./255)(inputs)
-
-    x = layers.RandomCrop(160, 160)(x)
-    x = layers.RandomFlip(mode="horizontal")(x)
+    if AUGMENT:
+        x = layers.RandomCrop(160, 160)(x)
+        x = layers.RandomFlip(mode="horizontal")(x)
 
     # We load the pretrained network, remove the top layers, and
     # freeze the pre-trained weights.
@@ -190,8 +194,10 @@ callbacks = [TensorBoard(log_dir=logdir)]
 
 epochs = 10
 
-history = model.fit(dist_train_dataset, epochs=epochs, steps_per_epoch=29,
+history = model.fit(train_dataset, epochs=epochs,
                     callbacks=callbacks, verbose=2)
+#history = model.fit(dist_train_dataset, epochs=epochs, steps_per_epoch=29,
+#                    callbacks=callbacks, verbose=2)
 
 fname = "pets-" + pt_name + "-reuse.h5"
 print('Saving model to', fname)
