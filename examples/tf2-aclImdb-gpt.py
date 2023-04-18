@@ -27,9 +27,6 @@ from tensorflow.keras.callbacks import TensorBoard
 import keras_nlp
 
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set()
 
 print('Using Tensorflow version: {}, and Keras version: {}.'
       .format(tf.__version__, tf.keras.__version__))
