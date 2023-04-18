@@ -12,7 +12,7 @@
 # 
 # First, the needed imports.
 
-import os
+import os, sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import random
@@ -182,7 +182,12 @@ else:
 
 # ### Inference
 
-review = ""
+if len(sys.argv)<2:
+    review = ""
+else:
+    review = sys.argv[1]
+    print('Starting review with "{}"'.format(review))
+
 #review = "This was a great scary movie which"
 #review = "This was the best movie of"
 #review = "A funny movie"
