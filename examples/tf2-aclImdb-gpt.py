@@ -17,11 +17,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import random
 import string
+import datetime
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.utils import plot_model
+from tensorflow.keras.callbacks import TensorBoard
 
 import keras_nlp
 
@@ -216,6 +217,7 @@ for i in range(5):
         from_logits=True,
     )
     print("{}: {}".format(i, tokenizer.detokenize(output_tokens)))
+print()
 
 # Top-P search:
     
@@ -229,6 +231,7 @@ for i in range(5):
         from_logits=True,
     )
     print("{}: {}".format(i, tokenizer.detokenize(output_tokens)))
+print()
 
-print("All done")
+print("All done.")
 
