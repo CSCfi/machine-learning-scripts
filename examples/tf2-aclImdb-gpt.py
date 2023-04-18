@@ -128,52 +128,57 @@ text_ds = text_ds.map(preprocess, num_parallel_calls=tf.data.AUTOTUNE).prefetch(
  
 # ### Initialization
 
-EMBED_DIM = 256
-FEED_FORWARD_DIM = 256
-NUM_HEADS = 3
-NUM_LAYERS = 2
+MODELFILE = "aclImdb-gpt.h5"
 
-inputs = keras.layers.Input(shape=(None,), dtype=tf.int32)
+if os.path.exists(MODELFILE):
+    model = keras.models.load_model(MODELFILE)
 
-embedding_layer = keras_nlp.layers.TokenAndPositionEmbedding(
-    vocabulary_size=VOCAB_SIZE,
-    sequence_length=SEQ_LEN,
-    embedding_dim=EMBED_DIM,
-    mask_zero=True,
-)
-x = embedding_layer(inputs)
+else:
+    EMBED_DIM = 256
+    FEED_FORWARD_DIM = 256
+    NUM_HEADS = 3
+    NUM_LAYERS = 2
 
-for _ in range(NUM_LAYERS):
-    decoder_layer = keras_nlp.layers.TransformerDecoder(
-        num_heads=NUM_HEADS,
-        intermediate_dim=FEED_FORWARD_DIM,
+    inputs = keras.layers.Input(shape=(None,), dtype=tf.int32)
+
+    embedding_layer = keras_nlp.layers.TokenAndPositionEmbedding(
+        vocabulary_size=VOCAB_SIZE,
+        sequence_length=SEQ_LEN,
+        embedding_dim=EMBED_DIM,
+        mask_zero=True,
     )
-    x = decoder_layer(x)
+    x = embedding_layer(inputs)
 
-outputs = keras.layers.Dense(VOCAB_SIZE)(x)
-model = keras.Model(inputs=inputs, outputs=outputs)
-loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-perplexity = keras_nlp.metrics.Perplexity(from_logits=True, mask_token_id=0)
-model.compile(optimizer="adam", loss=loss_fn, metrics=[perplexity])
+    for _ in range(NUM_LAYERS):
+        decoder_layer = keras_nlp.layers.TransformerDecoder(
+            num_heads=NUM_HEADS,
+            intermediate_dim=FEED_FORWARD_DIM,
+        )
+        x = decoder_layer(x)
 
-print(model.summary())
+    outputs = keras.layers.Dense(VOCAB_SIZE)(x)
+    model = keras.Model(inputs=inputs, outputs=outputs)
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    perplexity = keras_nlp.metrics.Perplexity(from_logits=True, mask_token_id=0)
+    model.compile(optimizer="adam", loss=loss_fn, metrics=[perplexity])
 
-# ### Learning
+    print(model.summary())
 
-logdir = os.path.join(os.getcwd(), "logs",
-                      "aclImdb-gpt-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-print('TensorBoard log directory:', logdir)
-os.makedirs(logdir)
-callbacks = [TensorBoard(log_dir=logdir)]
+    # ### Learning
 
-EPOCHS = 6
+    logdir = os.path.join(os.getcwd(), "logs",
+                          "aclImdb-gpt-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    print('TensorBoard log directory:', logdir)
+    os.makedirs(logdir)
+    callbacks = [TensorBoard(log_dir=logdir)]
 
-history = model.fit(text_ds, verbose=2, epochs=EPOCHS,
-                    callbacks=callbacks)
+    EPOCHS = 6
 
-fname = "aclImdb-gpt.h5"
-print('Saving model to', fname)
-model.save(fname)
+    history = model.fit(text_ds, verbose=2, epochs=EPOCHS,
+                        callbacks=callbacks)
+
+    print('Saving model to', MODELFILE)
+    model.save(MODELFILE)
 
 # ### Inference
 
