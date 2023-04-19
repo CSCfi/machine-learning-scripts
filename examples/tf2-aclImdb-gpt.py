@@ -2,9 +2,9 @@
 
 # # IMDB movie review (aclImdb) generation with scaled-down GPT 
 # 
-# In this notebook, we'll train a scaled-down GPT model from scratch
+# In this script, we'll train a scaled-down GPT model from scratch
 # for generating text using **Tensorflow** with the **Keras API**.
-# This notebook is based on Keras code examples "Text generation with
+# This script is based on Keras code examples "Text generation with
 # a miniature GPT"
 # (https://keras.io/examples/generative/text_generation_with_miniature_gpt/)
 # and "GPT text generation from scratch with
