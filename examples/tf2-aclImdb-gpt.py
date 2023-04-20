@@ -185,7 +185,7 @@ else:
 if len(sys.argv)<2:
     review = ""
 else:
-    review = sys.argv[1]
+    review = " ".join(sys.argv[1:])
     print('Starting review with "{}"'.format(review))
 
 #review = "This was a great scary movie which"
