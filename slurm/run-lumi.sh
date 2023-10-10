@@ -7,4 +7,7 @@
 #SBATCH --mem=60G
 #SBATCH --time=1:00:00
 
+module list
+set -xv
+
 srun python3 $*
