@@ -242,6 +242,7 @@ for epoch in range(1, epochs + 1):
         evaluate(validation_loader, valid_scores, epoch-1)
 
 # torch.save(model, "dvc-vgg16-reuse.pt")
+end_time = datetime.now()
 print('Total training time: {}.'.format(end_time - start_time))
 
 print('\nTesting (pretrained, before fine-tuning):')
