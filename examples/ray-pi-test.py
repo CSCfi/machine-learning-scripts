@@ -31,7 +31,7 @@ print('Starting at', datetime.now().strftime("%H:%M:%S"))
 # Ray on a modern laptop, roughly 2 hours
 # On a 10-node Ray cluster, roughly 10 minutes 
 #BATCHES = 100000
-BATCHES = 1000
+BATCHES = 10000
 print(BATCHES, 'batches')
 results = [] 
 for _ in range(BATCHES):
