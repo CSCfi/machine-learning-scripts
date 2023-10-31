@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH -p test -t 15 -c 8 
+#SBATCH -p medium -t 15 -c 128 
 #SBATCH -A project_2001659
-#SBATCH --mem=50GB
-#SBATCH --nodes=1
+#SBATCH --mem=200GB
+#SBATCH --nodes=4
 #SBATCH --tasks-per-node=1
 
 set -x
