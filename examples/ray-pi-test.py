@@ -4,6 +4,8 @@ import ray
 from random import random
 from datetime import datetime
 
+print('Ray version:', ray.__version__)
+
 # Let's start Ray
 ray.init()
 
@@ -30,8 +32,8 @@ print('Starting at', datetime.now().strftime("%H:%M:%S"))
 # With regular python this would take 11 hours
 # Ray on a modern laptop, roughly 2 hours
 # On a 10-node Ray cluster, roughly 10 minutes 
-#BATCHES = 100000
-BATCHES = 10000
+BATCHES = 100000
+#BATCHES = 10000
 print(BATCHES, 'batches')
 results = [] 
 for _ in range(BATCHES):
