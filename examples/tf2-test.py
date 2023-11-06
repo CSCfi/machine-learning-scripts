@@ -24,9 +24,12 @@ from distutils.version import LooseVersion as LV
 
 import numpy as np
 
+keras_version = "UNKNOWN"
+if hasattr(tf.keras, "__version__"):
+    keras_version = tf.keras.__version__
 print('Using Tensorflow version: {}, '
       'and Keras version: {}.'.format(tf.__version__,
-                                      tf.keras.__version__))
+                                      keras_version))
 assert(LV(tf.__version__) >= LV("2.0.0"))
 
 # Let's check if we have GPU available.

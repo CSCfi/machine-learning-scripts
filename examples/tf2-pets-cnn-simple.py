@@ -1,48 +1,51 @@
-# # Traffic sign classification with CNNs
+# coding: utf-8
+
+# # The Oxford-IIIT Pet Dataset classification with CNNs
 #
-# In this notebook, we'll train a convolutional neural network (CNN,
-# ConvNet) to classify images of traffic signs from The German Traffic
-# Sign Recognition Benchmark using TensorFlow 2 / Keras. This notebook
-# is largely based on the blog post [Building powerful image
-# classification models using very little data]
+# In this script, we'll train a convolutional neural network (CNN,
+# ConvNet) to classify images of breeds of dogs and cats using
+# TensorFlow 2 / Keras. This script is largely based on the blog
+# post [Building powerful image classification models using very
+# little data]
 # (https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html)
 # by François Chollet.
 #
-# **Note that using a GPU with this notebook is highly recommended.**
+# **Note that using a GPU with this script is highly recommended.**
 #
 # First, the needed imports.
 
-import os
-import datetime
+import os, datetime
+import random
 import pathlib
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.callbacks import TensorBoard, CSVLogger
+
+from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
-from PIL import Image
 
-print('Using Tensorflow version: {}, and Keras version: {}.'.format(
-    tf.__version__, keras.__version__))
+print('Using Tensorflow version:', tf.__version__,
+      'Keras version:', keras.__version__,
+      'backend:', keras.backend.backend())
 
-# # Data
+
+# ## Data
 #
-# The training dataset consists of 5535 images of traffic signs of
-# varying size. There are 43 different types of traffic signs. In
-# addition, the validation set consists of 999 images.
+# The training dataset consists of 2000 images of dogs and cats, split
+# in half.  In addition, the validation set consists of 1000 images,
 
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']
 else:
-    DATADIR = "/scratch/project_2005299/data/"
+    DATADIR = "/scratch/project_xxx/data/"
 
 print('Using DATADIR', DATADIR)
-datapath = os.path.join(DATADIR, "gtsrb/train-5535/")
+datapath = os.path.join(DATADIR, "pets/")
 assert os.path.exists(datapath), "Data not found at "+datapath
 
-nimages = {'train':5535, 'validation':999}
+nimages = {'train':7390}
 
 # ### Image paths and labels
 
@@ -57,59 +60,50 @@ def get_paths(dataset):
 
 image_paths = dict()
 image_paths['train'] = get_paths('train')
-image_paths['validation'] = get_paths('validation')
 
 label_names = sorted(item.name for item in
-                     pathlib.Path(datapath+'train').glob('*/') if
-                     item.is_dir())
+                     pathlib.Path(datapath+'train').glob('*/')
+                     if item.is_dir())
 label_to_index = dict((name, index) for index, name in enumerate(label_names))
+
 
 def get_labels(dataset):
     return [label_to_index[pathlib.Path(path).parent.name]
             for path in image_paths[dataset]]
-
+    
 image_labels = dict()
 image_labels['train'] = get_labels('train')
-image_labels['validation'] = get_labels('validation')
 
-# ###Data loading
+# ### Data loading
 #
-# We now define a function to load the images. The images are in PPM
-# format, so we use the PIL library. Also we need to resize the images
-# to a fixed size (INPUT_IMAGE_SIZE).
+# We now define a function to load the images. Also we need to resize
+# the images to a fixed size (INPUT_IMAGE_SIZE).
 
-INPUT_IMAGE_SIZE = [80, 80]
-
-def _load_image(path, label):
-    image = Image.open(path.numpy())
-    return np.array(image), label
+INPUT_IMAGE_SIZE = [256, 256]
 
 def load_image(path, label):
-    image, label = tf.py_function(_load_image, (path, label),
-                                  (tf.float32, tf.int32))
-    image.set_shape([None, None, None])
-    label.set_shape([])
+    image = tf.io.read_file(path)
+    image = tf.image.decode_jpeg(image, channels=3)
     return tf.image.resize(image, INPUT_IMAGE_SIZE), label
 
 # ### TF Datasets
 #
-# Let's now define our TF Datasets for training and validation data.
-
-BATCH_SIZE = 50
+# Let's now define our TF Datasets for training and validation
+# data. First the Datasets contain the filenames of the images and the
+# corresponding labels.
 
 train_dataset = tf.data.Dataset.from_tensor_slices(
     (image_paths['train'], image_labels['train']))
+
+# We then map() the filenames to the actual image data and decode the images.
+# Note that we shuffle the training data.
+
+BATCH_SIZE = 64
+
 train_dataset = train_dataset.map(load_image,
                                   num_parallel_calls=tf.data.AUTOTUNE)
 train_dataset = train_dataset.shuffle(2000).batch(BATCH_SIZE, drop_remainder=True)
 train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-
-validation_dataset = tf.data.Dataset.from_tensor_slices(
-    (image_paths['validation'], image_labels['validation']))
-validation_dataset = validation_dataset.map(load_image,
-                                            num_parallel_calls=tf.data.AUTOTUNE)
-validation_dataset = validation_dataset.batch(BATCH_SIZE, drop_remainder=True)
-validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
 # ## Train a small CNN from scratch
 #
@@ -119,9 +113,9 @@ validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 # However, due to the small number of training images, a large network
 # will easily overfit. Therefore, to make the most of our limited
 # number of training examples, we'll apply random augmentation
-# transformations (small random crop and contrast adjustment) to them
-# each time we are looping over them. This way, we "augment" our
-# training dataset to contain more data.
+# transformations (crop and horizontal flip) to them each time we are
+# looping over them. This way, we "augment" our training dataset to
+# contain more data.
 #
 # The augmentation transformations are implemented as preprocessing
 # layers in Keras. There are various such layers readily available,
@@ -133,8 +127,8 @@ validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
 x = layers.Rescaling(scale=1./255)(inputs)
 
-x = layers.RandomCrop(75, 75)(x)
-x = layers.RandomContrast(0.1)(x)
+x = layers.RandomCrop(160, 160)(x)
+x = layers.RandomFlip(mode="horizontal")(x)
 
 x = layers.Conv2D(32, (3, 3), activation='relu')(x)
 x = layers.MaxPooling2D(pool_size=(2, 2))(x)
@@ -146,12 +140,12 @@ x = layers.Conv2D(64, (3, 3), activation='relu')(x)
 x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 
 x = layers.Flatten()(x)
-x = layers.Dense(128, activation='relu')(x)
+x = layers.Dense(64, activation='relu')(x)
 x = layers.Dropout(0.5)(x)
-outputs = layers.Dense(43, activation='softmax')(x)
+outputs = layers.Dense(37, activation='softmax')(x)
 
 model = keras.Model(inputs=inputs, outputs=outputs,
-                    name="gtsrb-cnn-simple")
+                    name="pets-cnn-simple")
 
 model.compile(loss='sparse_categorical_crossentropy',
               optimizer='rmsprop',
@@ -163,18 +157,18 @@ print(model.summary())
 
 # We'll use TensorBoard to visualize our progress during training.
 
-logstr = ("gtsrb-cnn-simple-" +
-          datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-logdir = os.path.join(os.getcwd(), "logs", logstr)
+logdir = os.path.join(os.getcwd(), "logs", "pets-cnn-simple-"+
+                      datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 print('TensorBoard log directory:', logdir)
 os.makedirs(logdir)
-callbacks = [TensorBoard(log_dir=logdir), CSVLogger(logstr+".csv")]
+callbacks = [TensorBoard(log_dir=logdir)]
 
-epochs = 20
+epochs = 10
+
 history = model.fit(train_dataset, epochs=epochs,
-                    validation_data=validation_dataset,
                     callbacks=callbacks, verbose=2)
 
-fname = "gtsrb-cnn-simple.h5"
+fname = "pets-cnn-simple.h5"
 print('Saving model to', fname)
 model.save(fname)
+print('All done')
