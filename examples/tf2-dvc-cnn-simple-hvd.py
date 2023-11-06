@@ -34,9 +34,7 @@ import horovod.tensorflow.keras as hvd
 hvd.init()
 
 if hvd.rank() == 0:
-    print('Using Tensorflow version:', tf.__version__,
-          'Keras version:', tf.keras.__version__,
-          'backend:', tf.keras.backend.backend())
+    print('Using Tensorflow version:', tf.__version__)
     print('Using Horovod with', hvd.size(), 'workers')
 
 # Horovod: pin GPU to be used to process local rank (one GPU per process)

@@ -28,9 +28,7 @@ import sys
 
 import numpy as np
 
-print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', keras.__version__,
-      'backend:', keras.backend.backend(), flush=True)
+print('Using Tensorflow version:', tf.__version__)
 
 if 'DATADIR' in os.environ:
     DATADIR = os.environ['DATADIR']

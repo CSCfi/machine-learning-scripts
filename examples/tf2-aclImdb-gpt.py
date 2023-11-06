@@ -28,8 +28,7 @@ import keras_nlp
 
 import numpy as np
 
-print('Using Tensorflow version: {}, and Keras version: {}.'
-      .format(tf.__version__, tf.keras.__version__))
+print('Using Tensorflow version: {}'.format(tf.__version__))
 
 # Let's check if we have GPU available.
 

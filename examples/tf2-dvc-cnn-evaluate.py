@@ -16,9 +16,7 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 
-print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', keras.__version__,
-      'backend:', keras.backend.backend())
+print('Using Tensorflow version:', tf.__version__)
 
 try:
     from tensorflow_hub import KerasLayer

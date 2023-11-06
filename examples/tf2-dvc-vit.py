@@ -26,9 +26,7 @@ import pathlib
 
 import numpy as np
 
-print('Using TensorFlow version:', tf.__version__,
-      'Keras version:', tf.keras.__version__,
-      'Transformers version:', transformers_version)
+print('Using TensorFlow version:', tf.__version__)
 
 # ## Data
 
