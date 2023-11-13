@@ -78,7 +78,11 @@ image_labels['validation'] = get_labels('validation')
 # We now define a function to load the images. Also we need to resize
 # the images to a fixed size (INPUT_IMAGE_SIZE).
 
-INPUT_IMAGE_SIZE = [256, 256]
+AUGMENT = True
+if AUGMENT:
+    INPUT_IMAGE_SIZE = [256, 256]
+else:
+    INPUT_IMAGE_SIZE = [160, 160]
 
 def load_image(path, label):
     image = tf.io.read_file(path)
@@ -133,8 +137,9 @@ validation_dataset = validation_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 inputs = keras.Input(shape=INPUT_IMAGE_SIZE+[3])
 x = layers.Rescaling(scale=1./255)(inputs)
 
-x = layers.RandomCrop(160, 160)(x)
-x = layers.RandomFlip(mode="horizontal")(x)
+if AUGMENT:
+    x = layers.RandomCrop(160, 160)(x)
+    x = layers.RandomFlip(mode="horizontal")(x)
 
 x = layers.Conv2D(32, (3, 3), activation='relu')(x)
 x = layers.MaxPooling2D(pool_size=(2, 2))(x)
