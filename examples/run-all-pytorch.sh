@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SBATCH="sbatch --parsable -t 30 --reservation= "
-SBATCH_TEST="$SBATCH --account=project_2005299 --partition=test -t 5"
+SBATCH_TEST="$SBATCH --account=project_2006678 --partition=test -t 5"
 SCRIPT="run-pytorch.sh"
 SCRIPT_HVD="run-pytorch-hvd.sh"
 
@@ -24,15 +24,15 @@ jid7=$($SBATCH $SCRIPT pytorch_20ng_bert.py)
 jidx=$($SBATCH_TEST --dependency=afterany:$jid1:$jid2:$jid3:$jid4:$jid5:$jid6:$jid7:$jid8 --job-name="summary" <<EOF
 #!/bin/bash
 echo "** pytorch_dvc_cnn ($jid1,$jid2) **"
-grep -h -A 1 '^Simple:' slurm-${jid1}.out
-grep -h -A 1 -E '^Pretrained:|^Finetuned:' --no-group-separator slurm-${jid2}.out
+grep -h -A 1 '^Testing' slurm-${jid1}.out
+grep -h -A 1 -E '^Testing' --no-group-separator slurm-${jid2}.out
 echo
 echo "** pytorch_dvc_cnn_hvd ($jid8) **"
-grep -h -A 1 'Test set:' slurm-${jid8}.out
+grep -h -A 1 'Testing' slurm-${jid8}.out
 echo
 echo "** pytorch_gtsrb_cnn ($jid3,$jid4) **"
-grep -h -A 1 '^Simple:' slurm-${jid3}.out
-grep -h -A 1 -E '^Pretrained:|^Finetuned:' --no-group-separator slurm-${jid4}.out
+grep -h -A 1 '^Testing' slurm-${jid3}.out
+grep -h -A 1 -E '^Testing' --no-group-separator slurm-${jid4}.out
 echo
 echo "** pytorch_20ng_cnn ($jid5) **"
 grep -A 1 'Test set' slurm-${jid5}.out
