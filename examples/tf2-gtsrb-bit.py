@@ -26,8 +26,7 @@ from tensorflow.keras.callbacks import TensorBoard
 import numpy as np
 from PIL import Image
 
-print('Using Tensorflow version: {}, and Keras version: {}.'.format(
-    tf.__version__, keras.__version__))
+print('Using Tensorflow version: {}'.format(tf.__version__))
 
 # # Data
 #

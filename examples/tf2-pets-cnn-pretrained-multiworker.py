@@ -28,9 +28,7 @@ from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
 
-print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', keras.__version__,
-      'backend:', keras.backend.backend())
+print('Using Tensorflow version:', tf.__version__)
 
 slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=15345)
 options = tf.distribute.experimental.CommunicationOptions(

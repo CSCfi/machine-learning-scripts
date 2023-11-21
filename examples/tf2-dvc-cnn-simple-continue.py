@@ -33,10 +33,7 @@ from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
 
-print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', tf.keras.__version__,
-      'backend:', tf.keras.backend.backend())
-
+print('Using Tensorflow version:', tf.__version__)
 
 # ## Data
 #
