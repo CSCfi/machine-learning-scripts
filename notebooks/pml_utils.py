@@ -130,8 +130,8 @@ def get_mnist(directory, labels_as_strings=True, flatten=True):
     X_test, y_test = get_mnist_dataset(directory, 't10k-images-idx3-ubyte',
                                        't10k-labels-idx1-ubyte')
     if labels_as_strings:
-        y_train = y_train.astype(np.str)
-        y_test = y_test.astype(np.str)
+        y_train = y_train.astype(str)
+        y_test = y_test.astype(str)
 
     if flatten:
         X_train = X_train.astype(np.float64).reshape(-1, 28*28)
