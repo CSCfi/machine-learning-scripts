@@ -9,6 +9,12 @@ class TwoLayeredRNN(nn.Module):
         self.lstm = nn.LSTM(embedding_dims, lstm_units, num_layers=2,
                             batch_first=True)
         self.linear = nn.Linear(lstm_units, 1)
+
+        # With bidirectional
+        #self.lstm = nn.LSTM(embedding_dims, lstm_units, num_layers=2,
+        #                    batch_first=True, bidirectional=True)
+        #self.linear = nn.Linear(lstm_units*2, 1)
+        
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
