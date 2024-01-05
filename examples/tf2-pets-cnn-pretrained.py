@@ -28,10 +28,7 @@ from tensorflow.keras.callbacks import TensorBoard
 
 import numpy as np
 
-print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', keras.__version__,
-      'backend:', keras.backend.backend())
-
+print('Using Tensorflow version:', tf.__version__)
 
 # ## Data
 # 
@@ -80,7 +77,7 @@ image_labels['train'] = get_labels('train')
 # We now define a function to load the images. Also we need to resize
 # the images to a fixed size (INPUT_IMAGE_SIZE).
 
-AUGMENT = False
+AUGMENT = True
 if AUGMENT:
     INPUT_IMAGE_SIZE = [256, 256]
 else:
