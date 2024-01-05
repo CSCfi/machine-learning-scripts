@@ -19,9 +19,7 @@ import numpy as np
 
 from PIL import Image
 
-print('Using Tensorflow version:', tf.__version__,
-      'Keras version:', keras.__version__,
-      'backend:', keras.backend.backend())
+print('Using Tensorflow version:', tf.__version__)
 
 try:
     from tensorflow_hub import KerasLayer

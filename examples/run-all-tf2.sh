@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SBATCH="sbatch --parsable -t 30 --reservation= "
-SBATCH_TEST="$SBATCH --account=project_2005299 --partition=test -t 5"
+SBATCH_TEST="$SBATCH --account=project_2006678 --partition=test -t 5"
 SCRIPT="run.sh"
 SCRIPT_HVD="run-hvd.sh"
 
