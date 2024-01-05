@@ -119,8 +119,8 @@ train_dataset = tf.data.Dataset.from_tensor_slices(
 # Note that we shuffle the training data.
 
 BATCH_SIZE = 64
-if len(n_gpus)>1:
-      BATCH_SIZE *= len(n_gpus)
+if n_gpus>1:
+      BATCH_SIZE *= n_gpus
 
 train_dataset = train_dataset.map(load_image,
                                   num_parallel_calls=tf.data.AUTOTUNE)
