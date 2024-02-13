@@ -1,85 +1,286 @@
+#!/usr/bin/env python
 # coding: utf-8
 
-# Dogs-vs-cats classification with CNNs
+# # Dogs-vs-cats classification with CNNs
+#
+# In this script, we'll train a convolutional neural network (CNN) to
+# classify images of dogs from images of cats using PyTorch.
+#
+# ## Option 2: Reuse a pre-trained CNN
+#
+# Here we'll use the VGG16 pre-trained network:
+# https://pytorch.org/docs/stable/torchvision/models.html#torchvision.models.vgg16
+#
+# It has weights learned using ImageNet.  We remove the top layers and
+# freeze the pre-trained weights, and then stack our own, randomly
+# initialized, layers on top of the VGG16 network.
+#
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import models
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from torchvision import datasets, transforms, models
+from packaging.version import Version as LV
 from datetime import datetime
+import os
+import sys
 
-from pytorch_dvc_cnn import get_train_loader, get_validation_loader, get_test_loader
-from pytorch_dvc_cnn import device, train, evaluate, get_tensorboard
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
+from torch.utils.data.distributed import DistributedSampler
 
-model_file = 'dvc_pretrained_cnn_multigpu.pt'
-model_file_ft = 'dvc_pretrained_cnn_finetune_multigpu.pt'
+torch.manual_seed(42)
 
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
 
-# Option 2: Reuse a pre-trained CNN
+print('Using PyTorch version:', torch.__version__, ' Device:', device)
+assert LV(torch.__version__) >= LV("1.0.0")
+
 
 class PretrainedNet(nn.Module):
     def __init__(self):
         super(PretrainedNet, self).__init__()
-        self.vgg_features = models.vgg16(pretrained=True).features
+        self.vgg_features = models.vgg16(weights=models.VGG16_Weights.DEFAULT).features
 
         # Freeze the VGG16 layers
         for param in self.vgg_features.parameters():
             param.requires_grad = False
 
-        self.fc1 = nn.Linear(512*4*4, 64)
-        self.fc2 = nn.Linear(64, 1)
+        # Add our own layers on top
+        self.own_layers = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(512*4*4, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
         x = self.vgg_features(x)
-
-        # flattened 2D to 1D
-        x = x.view(-1, 512*4*4)
-
-        x = F.relu(self.fc1(x))
-        return torch.sigmoid(self.fc2(x))
+        return self.own_layers(x).squeeze()
 
 
-def train_main():
-    # Learning 1: New layers
+def correct(output, target):
+    class_pred = output.round().int()          # set to 0 for <0.5, 1 for >0.5
+    correct_ones = class_pred == target.int()  # 1 for correct, 0 for incorrect
+    return correct_ones.sum().item()           # count number of correct ones
 
+
+def train(data_loader, model, criterion, optimizer):
+    model.train()
+
+    num_batches = 0
+    num_items = 0
+
+    total_loss = 0
+    total_correct = 0
+    for data, target in data_loader:
+        # Copy data and targets to GPU
+        data = data.to(device)
+        target = target.to(device).to(torch.float)
+
+        # Do a forward pass
+        output = model(data)
+
+        # Calculate the loss
+        loss = criterion(output, target)
+        total_loss += loss
+        num_batches += 1
+
+        # Count number of correct
+        total_correct += correct(output, target)
+        num_items += len(target)
+
+        # Backpropagation
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+    return {
+        'loss': total_loss/num_batches,
+        'accuracy': total_correct/num_items
+        }
+
+
+def test(test_loader, model, criterion):
+    model.eval()
+
+    num_batches = len(test_loader)
+    num_items = len(test_loader.dataset)
+
+    test_loss = 0
+    total_correct = 0
+
+    with torch.no_grad():
+        for data, target in test_loader:
+            # Copy data and targets to GPU
+            data = data.to(device)
+            target = target.to(device).to(torch.float)
+
+            # Do a forward pass
+            output = model(data)
+
+            # Calculate the loss
+            loss = criterion(output, target)
+            test_loss += loss.item()
+
+            # Count number of correct digits
+            total_correct += correct(output, target)
+
+    return {
+        'loss': test_loss/num_batches,
+        'accuracy': total_correct/num_items
+    }
+
+
+def log_measures(ret, log, prefix, epoch):
+    if log is not None:
+        for key, value in ret.items():
+            log.add_scalar(prefix + "_" + key, value, epoch)
+
+
+def main():
+    # Initialize PyTorch distributed
+    dist.init_process_group(backend='nccl')
+    
+    local_rank = int(os.environ['LOCAL_RANK'])
+    torch.cuda.set_device(local_rank)
+
+    rank_0 = dist.get_rank() == 0
+    
+    # TensorBoard for logging
+    log = None
+    try:
+        if rank_0:
+            time_str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            logdir = os.path.join(os.getcwd(), "logs", "dvc-pretrained-" + time_str)
+            print('TensorBoard log directory:', logdir)
+            os.makedirs(logdir)
+            log = SummaryWriter(logdir)
+    except ImportError:
+        pass
+
+    # The training dataset consists of 2000 images of dogs and cats, split
+    # in half.  In addition, the validation set consists of 1000 images,
+    # and the test set of 22000 images.
+    #
+    # First, we'll resize all training and validation images to a fixed
+    # size.
+    #
+    # Then, to make the most of our limited number of training examples,
+    # we'll apply random transformations to them each time we are looping
+    # over them. This way, we "augment" our training dataset to contain
+    # more data. There are various transformations available in
+    # torchvision, see:
+    # https://pytorch.org/docs/stable/torchvision/transforms.html
+
+    datapath = os.getenv('DATADIR')
+    if datapath is None:
+        print("Please set DATADIR environment variable!")
+        sys.exit(1)
+    datapath = os.path.join(datapath, 'dogs-vs-cats/train-2000')
+
+    input_image_size = (150, 150)
+
+    data_transform = transforms.Compose([
+            transforms.Resize(input_image_size),
+            transforms.RandomAffine(degrees=0, translate=None,
+                                    scale=(0.8, 1.2), shear=0.2),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor()
+        ])
+
+    noop_transform = transforms.Compose([
+            transforms.Resize(input_image_size),
+            transforms.ToTensor()
+        ])
+
+    # Data loaders
+    batch_size = 25//dist.get_world_size()
+
+    train_dataset = datasets.ImageFolder(root=datapath+'/train',
+                                         transform=data_transform)
+    train_sampler = DistributedSampler(train_dataset, drop_last=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size,
+                              shuffle=False, num_workers=4,
+                              sampler=train_sampler)
+    if rank_0:
+        print('Train: ', end="")
+        print('Found', len(train_dataset), 'images belonging to',
+              len(train_dataset.classes), 'classes')
+
+    validation_dataset = datasets.ImageFolder(root=datapath+'/validation',
+                                              transform=noop_transform)
+    validation_loader = DataLoader(validation_dataset, batch_size=batch_size,
+                                   shuffle=False, num_workers=4)
+    if rank_0:
+        print('Validation: ', end="")
+        print('Found', len(validation_dataset), 'images belonging to',
+              len(validation_dataset.classes), 'classes')
+
+    test_dataset = datasets.ImageFolder(root=datapath+'/test',
+                                        transform=noop_transform)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size,
+                             shuffle=False, num_workers=4)
+    if rank_0:
+        print('Test: ', end="")
+        print('Found', len(test_dataset), 'images belonging to',
+              len(test_dataset.classes), 'classes')
+
+    # Define the network and training parameters
     model = PretrainedNet()
-
-    num_gpus = torch.cuda.device_count()
-    if num_gpus > 1:
-        print('Using multi-gpu with {} GPUs!'.format(num_gpus))
-        model = nn.DataParallel(model)
-    model.to(device)
-
+    model = model.to(device)
+    model = DistributedDataParallel(model, device_ids=[local_rank])
+    if rank_0:
+        print(model)
+   
     optimizer = optim.SGD(model.parameters(), lr=0.01)
     criterion = nn.BCELoss()
 
-    print(model)
+    num_epochs = 10
 
-    batch_size = 25 * num_gpus
-    train_loader = get_train_loader(batch_size)
-    validation_loader = get_validation_loader(batch_size)
-
-    log = get_tensorboard('pretrained')
-    epochs = 10
-
+    # Training loop
     start_time = datetime.now()
-    for epoch in range(1, epochs + 1):
-        train(model, train_loader, criterion, optimizer, epoch, log)
+    for epoch in range(num_epochs):
+        train_ret = train(train_loader, model, criterion, optimizer)
+        if rank_0:
+            log_measures(train_ret, log, "train", epoch)
 
-        with torch.no_grad():
-            print('\nValidation:')
-            evaluate(model, validation_loader, criterion, epoch, log)
+        val_ret = test(validation_loader, model, criterion)
+        if rank_0:
+            log_measures(val_ret, log, "val", epoch)
+            print(f"Epoch {epoch+1}: "
+                  f"train accuracy: {train_ret['accuracy']:.2%}, "
+                  f"val accuracy: {val_ret['accuracy']:.2%}")
 
     end_time = datetime.now()
-    print('Total training time: {}.'.format(end_time - start_time))
+    if rank_0:
+        print('Total training time: {}.'.format(end_time - start_time))
 
-    torch.save(model.module.state_dict(), model_file)
-    print('Wrote model to', model_file)
+        # Inference
+        ret = test(test_loader, model, criterion)
+        print("\nTesting (pretrained, before fine-tuning): "
+              f"accuracy: {ret['accuracy']:.2%}\n")
 
-    # Learning 2: Fine-tuning
-    log = get_tensorboard('finetuned')
+    #  Fine-tuning
+    #
+    # Once the top layers have learned some reasonable weights, we can
+    # continue training by unfreezing the last convolution block of
+    # VGG16 so that it may adapt to our data. The learning rate should
+    # be smaller than usual.
+    #
+    # Below we loop over all layers and set only the last three Conv2d
+    # layers to trainable. In the printout we mark trainable layers
+    # with '+', frozen with '-'.  Other layers don't have trainable
+    # parameters.
 
+    if rank_0:
+        print("Marking layers for training (+) or frozen (-):")
     for name, layer in model.module.vgg_features.named_children():
         note = ' '
         for param in layer.parameters():
@@ -87,63 +288,52 @@ def train_main():
             if int(name) >= 24:
                 param.requires_grad = True
                 note = '+'
-        print(name, note, layer, len(param))
+        if rank_0:
+            print(name, note, layer, len(param))
 
+    # We set up the training, note that we need to give only the
+    # parameters that are set to be trainable.
     params = filter(lambda p: p.requires_grad, model.parameters())
-    # optimizer = optim.SGD(model.parameters(), lr=1e-3)
+    #optimizer = optim.SGD(model.parameters(), lr=1e-3)
     optimizer = optim.RMSprop(params, lr=1e-5)
     criterion = nn.BCELoss()
 
-    print(model)
+    # Note that before continuing the training, we create a separate
+    # TensorBoard log directory.
+    if log is not None:
+        logdir_pt = logdir + '-pretrained-finetune'
+        os.makedirs(logdir_pt)
+        log = SummaryWriter(logdir_pt)
 
-    prev_epochs = epoch
-    epochs = 20
+    prev_epochs = num_epochs
+    num_epochs = 20
 
     start_time = datetime.now()
-    for epoch in range(1, epochs + 1):
-        train(model, train_loader, criterion, optimizer, prev_epochs+epoch, log)
+    for epoch in range(prev_epochs, prev_epochs+num_epochs):
+        train_ret = train(train_loader, model, criterion, optimizer)
+        if rank_0:
+            log_measures(train_ret, log, "train", epoch)
 
-        with torch.no_grad():
-            print('\nValidation:')
-            evaluate(model, validation_loader, criterion, prev_epochs+epoch, log)
+        val_ret = test(validation_loader, model, criterion)
+
+        if rank_0:
+            log_measures(val_ret, log, "val", epoch)
+            
+            print(f"Epoch {epoch+1}: "
+                  f"train loss: {train_ret['loss']:.6f} "
+                  f"train accuracy: {train_ret['accuracy']:.2%}, "
+                  f"val accuracy: {val_ret['accuracy']:.2%}")
 
     end_time = datetime.now()
-    print('Total training time: {}.'.format(end_time - start_time))
+    if rank_0:
+        print('Total fine-tuning time: {}.'.format(end_time - start_time))
 
-    torch.save(model.module.state_dict(), model_file_ft)
-    print('Wrote finetuned model to', model_file_ft)
-
-
-def test_main():
-    model = PretrainedNet()
-    model.load_state_dict(torch.load(model_file))
-    model.to(device)
-
-    test_loader = get_test_loader(25)
-
-    print('=========')
-    print('Pretrained:')
-    with torch.no_grad():
-        evaluate(model, test_loader)
-
-    model = PretrainedNet()
-    model.load_state_dict(torch.load(model_file_ft))
-    model.to(device)
-
-    print('=========')
-    print('Finetuned:')
-    with torch.no_grad():
-        evaluate(model, test_loader)
+    # Inference
+    if rank_0:
+        ret = test(test_loader, model, criterion)
+        print("\nTesting (pretrained, after fine-tuning): "
+              f"accuracy: {ret['accuracy']:.2%}\n")
 
 
-if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--test', action='store_true')
-    args = parser.parse_args()
-
-    if args.test:
-        test_main()
-    else:
-        train_main()
+if __name__ == "__main__":
+    main()

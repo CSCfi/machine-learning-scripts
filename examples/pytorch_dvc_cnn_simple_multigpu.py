@@ -1,106 +1,256 @@
+#!/usr/bin/env python
 # coding: utf-8
 
-# Dogs-vs-cats classification with CNNs
+# # Dogs-vs-cats classification with CNNs
+#
+# In this script, we'll train a convolutional neural network (CNN) to
+# classify images of dogs from images of cats using PyTorch.
+#
+# ## Option 1: Train a small CNN from scratch
+#
+# Similarly as with MNIST digits, we can start from scratch and train
+# a CNN for the classification task. However, due to the small number
+# of training images, a large network will easily overfit, regardless
+# of the data augmentation.
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+from packaging.version import Version as LV
 from datetime import datetime
+import os
+import sys
 
-from pytorch_dvc_cnn import get_train_loader, get_validation_loader, get_test_loader
-from pytorch_dvc_cnn import device, train, evaluate, get_tensorboard
+torch.manual_seed(42)
 
-model_file = 'dvc_simple_cnn_multigpu.pt'
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
 
+print('Using PyTorch version:', torch.__version__, ' Device:', device)
+assert LV(torch.__version__) >= LV("1.0.0")
 
-# Option 1: Train a small CNN from scratch
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, (3, 3))
-        self.pool1 = nn.MaxPool2d((2, 2))
-        self.conv2 = nn.Conv2d(32, 32, (3, 3))
-        self.pool2 = nn.MaxPool2d((2, 2))
-        self.conv3 = nn.Conv2d(32, 64, (3, 3))
-        self.pool3 = nn.MaxPool2d((2, 2))
-        self.fc1 = nn.Linear(17*17*64, 64)
-        self.fc1_drop = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(64, 1)
+        self.layers = nn.Sequential(
+            nn.Conv2d(3, 32, (3, 3)),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+
+            nn.Conv2d(32, 32, (3, 3)),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+
+            nn.Conv2d(32, 64, (3, 3)),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+
+            nn.Flatten(),             # flatten 2D to 1D
+            nn.Linear(17*17*64, 64),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(64, 1),
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = self.pool1(x)
-        x = F.relu(self.conv2(x))
-        x = self.pool2(x)
-        x = F.relu(self.conv3(x))
-        x = self.pool3(x)
-
-        # "flatten" 2D to 1D
-        x = x.view(-1, 17*17*64)
-        x = F.relu(self.fc1(x))
-        x = self.fc1_drop(x)
-        return torch.sigmoid(self.fc2(x))
+        return self.layers(x).squeeze()
 
 
-def train_main():
-    model = Net()
+def correct(output, target):
+    class_pred = output.round().int()          # set to 0 for <0.5, 1 for >0.5
+    correct_ones = class_pred == target.int()  # 1 for correct, 0 for incorrect
+    return correct_ones.sum().item()           # count number of correct ones
+
+
+def train(data_loader, model, criterion, optimizer):
+    model.train()
+
+    num_batches = 0
+    num_items = 0
+
+    total_loss = 0
+    total_correct = 0
+    for data, target in data_loader:
+        # Copy data and targets to GPU
+        data = data.to(device)
+        target = target.to(device).to(torch.float)
+
+        # Do a forward pass
+        output = model(data)
+
+        # Calculate the loss
+        loss = criterion(output, target)
+        total_loss += loss
+        num_batches += 1
+
+        # Count number of correct
+        total_correct += correct(output, target)
+        num_items += len(target)
+
+        # Backpropagation
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+    return {
+        'loss': total_loss/num_batches,
+        'accuracy': total_correct/num_items
+        }
+
+
+def test(test_loader, model, criterion):
+    model.eval()
+
+    num_batches = len(test_loader)
+    num_items = len(test_loader.dataset)
+
+    test_loss = 0
+    total_correct = 0
+
+    with torch.no_grad():
+        for data, target in test_loader:
+            # Copy data and targets to GPU
+            data = data.to(device)
+            target = target.to(device).to(torch.float)
+
+            # Do a forward pass
+            output = model(data)
+
+            # Calculate the loss
+            loss = criterion(output, target)
+            test_loss += loss.item()
+
+            # Count number of correct digits
+            total_correct += correct(output, target)
+
+    return {
+        'loss': test_loss/num_batches,
+        'accuracy': total_correct/num_items
+    }
+
+
+def log_measures(ret, log, prefix, epoch):
+    if log is not None:
+        for key, value in ret.items():
+            log.add_scalar(prefix + "_" + key, value, epoch)
+
+
+def main():
+    # TensorBoard for logging
+    try:
+        import tensorboardX
+        time_str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        logdir = os.path.join(os.getcwd(), "logs", "dvc-" + time_str)
+        print('TensorBoard log directory:', logdir)
+        os.makedirs(logdir)
+        log = tensorboardX.SummaryWriter(logdir)
+    except ImportError:
+        log = None
 
     num_gpus = torch.cuda.device_count()
-    if num_gpus > 1:
-        print('Using multi-gpu with {} GPUs!'.format(num_gpus))
-        model = nn.DataParallel(model)
-    model.to(device)
+    print('Found', num_gpus, 'GPUs')
 
+    # The training dataset consists of 2000 images of dogs and cats, split
+    # in half.  In addition, the validation set consists of 1000 images,
+    # and the test set of 22000 images.
+    #
+    # First, we'll resize all training and validation images to a fixed
+    # size.
+    #
+    # Then, to make the most of our limited number of training examples,
+    # we'll apply random transformations to them each time we are looping
+    # over them. This way, we "augment" our training dataset to contain
+    # more data. There are various transformations available in
+    # torchvision, see:
+    # https://pytorch.org/docs/stable/torchvision/transforms.html
+
+    datapath = os.getenv('DATADIR')
+    if datapath is None:
+        print("Please set DATADIR environment variable!")
+        sys.exit(1)
+    datapath = os.path.join(datapath, 'dogs-vs-cats/train-2000')
+
+    input_image_size = (150, 150)
+
+    data_transform = transforms.Compose([
+            transforms.Resize(input_image_size),
+            transforms.RandomAffine(degrees=0, translate=None,
+                                    scale=(0.8, 1.2), shear=0.2),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor()
+        ])
+
+    noop_transform = transforms.Compose([
+            transforms.Resize(input_image_size),
+            transforms.ToTensor()
+        ])
+
+    # Data loaders
+    batch_size = 25//num_gpus
+
+    print('Train: ', end="")
+    train_dataset = datasets.ImageFolder(root=datapath+'/train',
+                                         transform=data_transform)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size,
+                              shuffle=True, num_workers=4)
+    print('Found', len(train_dataset), 'images belonging to',
+          len(train_dataset.classes), 'classes')
+
+    print('Validation: ', end="")
+    validation_dataset = datasets.ImageFolder(root=datapath+'/validation',
+                                              transform=noop_transform)
+    validation_loader = DataLoader(validation_dataset, batch_size=batch_size,
+                                   shuffle=False, num_workers=4)
+    print('Found', len(validation_dataset), 'images belonging to',
+          len(validation_dataset.classes), 'classes')
+
+    print('Test: ', end="")
+    test_dataset = datasets.ImageFolder(root=datapath+'/test',
+                                        transform=noop_transform)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size,
+                             shuffle=False, num_workers=4)
+    print('Found', len(test_dataset), 'images belonging to',
+          len(test_dataset.classes), 'classes')
+
+    # Define the network and training parameters
+    model = Net()
+    if num_gpus > 1:
+        model = nn.DataParallel(model)
+    
+    model = model.to(device)
     optimizer = optim.SGD(model.parameters(), lr=0.05)
     criterion = nn.BCELoss()
 
     print(model)
 
-    batch_size = 25 * num_gpus
-    train_loader = get_train_loader(batch_size)
-    validation_loader = get_validation_loader(batch_size)
+    num_epochs = 50
 
-    log = get_tensorboard('simple_multigpu')
-    epochs = 50
-
+    # Training loop
     start_time = datetime.now()
-    for epoch in range(1, epochs + 1):
-        train(model, train_loader, criterion, optimizer, epoch, log)
+    for epoch in range(num_epochs):
+        train_ret = train(train_loader, model, criterion, optimizer)
+        log_measures(train_ret, log, "train", epoch)
 
-        with torch.no_grad():
-            print('\nValidation:')
-            evaluate(model, validation_loader, criterion, epoch, log)
+        val_ret = test(validation_loader, model, criterion)
+        log_measures(val_ret, log, "val", epoch)
+        print(f"Epoch {epoch+1}: "
+              f"train loss: {train_ret['loss']:.6f} "
+              f"train accuracy: {train_ret['accuracy']:.2%}, "
+              f"val accuracy: {val_ret['accuracy']:.2%}")
 
     end_time = datetime.now()
     print('Total training time: {}.'.format(end_time - start_time))
 
-    torch.save(model.module.state_dict(), model_file)
-    print('Wrote model to', model_file)
+    # Inference
+    ret = test(test_loader, model, criterion)
+    print(f"\nTesting: accuracy: {ret['accuracy']:.2%}")
 
 
-def test_main():
-    model = Net()
-    model.load_state_dict(torch.load(model_file))
-    model.to(device)
-
-    test_loader = get_test_loader(25)
-
-    print('=========')
-    print('Test set:')
-    with torch.no_grad():
-        evaluate(model, test_loader)
-
-
-if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--test', action='store_true')
-    args = parser.parse_args()
-
-    if args.test:
-        test_main()
-    else:
-        train_main()
+if __name__ == "__main__":
+    main()

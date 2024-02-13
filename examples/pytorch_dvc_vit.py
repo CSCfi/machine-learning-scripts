@@ -3,23 +3,25 @@
 
 # # Dogs-vs-cats classification with CNNs
 #
-#
-# **Note that using a GPU with this notebook is highly recommended.**
-#
-# First, the needed imports.
+# In this script, we'll finetune a Vision Transformer
+# (https://arxiv.org/abs/2010.11929) (ViT) to classify images of cats
+# and dogs using PyTorch and HuggingFace Transformers:
+# https://github.com/huggingface/transformers
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from distutils.version import LooseVersion as LV
+from packaging.version import Version as LV
+from datetime import datetime
+import os
+import sys
 
-from transformers import ViTFeatureExtractor, ViTForImageClassification
+from transformers import AutoImageProcessor, ViTForImageClassification
 from transformers import __version__ as transformers_version
 
 torch.manual_seed(42)
-import numpy as np
 
 if torch.cuda.is_available():
     device = torch.device('cuda')
@@ -29,199 +31,197 @@ else:
 print('Using PyTorch version:', torch.__version__,
       'Transformers version:', transformers_version,
       'Device:', device)
-assert(LV(torch.__version__) >= LV("1.0.0"))
+assert LV(torch.__version__) >= LV("1.0.0")
 
 
-# TensorBoard is a tool for visualizing progress during training. Although
-# TensorBoard was created for TensorFlow, it can also be used with PyTorch. It
-# is easiest to use it with the tensorboardX module.
-
-try:
-    import tensorboardX
-    import os
-    import datetime
-    logdir = os.path.join(os.getcwd(), "logs",
-                          "dvc-"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-    print('TensorBoard log directory:', logdir)
-    os.makedirs(logdir)
-    log = tensorboardX.SummaryWriter(logdir)
-except ImportError:
-    log = None
+def correct(output, target):
+    class_pred = (output > 0).int()            # set to 0 for <0.5, 1 for >0.5
+    correct_ones = class_pred == target.int()  # 1 for correct, 0 for incorrect
+    return correct_ones.sum().item()           # count number of correct ones
 
 
-# ## Data
-#
-# The training dataset consists of 2000 images of dogs and cats, split in half.
-# In addition, the validation set consists of 1000 images, and the test set of
-# 22000 images.
-#
-# ### Downloading the data
-
-local_scratch = os.getenv('LOCAL_SCRATCH')
-
-datapath = local_scratch if local_scratch is not None else '/scratch/project_2005299/data'
-datapath = os.path.join(datapath, 'dogs-vs-cats/train-2000')
-
-if local_scratch is not None and not os.path.exists(datapath):
-    os.system('tar xf /scratch/project_2005299/data/dogs-vs-cats.tar -C ' + local_scratch)
-
-print("Loading data from", datapath)
-
-(nimages_train, nimages_validation, nimages_test) = (2000, 1000, 22000)
-
-
-# ### Data loaders
-#
-# Let's now define our real data loaders for training, validation, and test data.
-
-class ImageClassificationCollator:
-    def __init__(self, feature_extractor):
-        self.feature_extractor = feature_extractor
-
-    def __call__(self, batch):
-        x = self.feature_extractor([x[0] for x in batch], return_tensors='pt')
-        x['labels'] = torch.tensor([x[1] for x in batch], dtype=torch.float32)
-        return x
-
-
-VITMODEL = 'google/vit-base-patch16-224'
-feature_extractor = ViTFeatureExtractor.from_pretrained(VITMODEL)
-collator = ImageClassificationCollator(feature_extractor)
-
-batch_size = 25
-
-print('Train: ', end="")
-train_dataset = datasets.ImageFolder(root=datapath+'/train',
-                                     transform=transforms.ToTensor())
-train_loader = DataLoader(train_dataset, batch_size=batch_size,
-                          shuffle=True, num_workers=4,
-                          collate_fn=collator)
-print('Found', len(train_dataset), 'images belonging to',
-      len(train_dataset.classes), 'classes')
-
-print('Validation: ', end="")
-validation_dataset = datasets.ImageFolder(root=datapath+'/validation',
-                                          transform=transforms.ToTensor())
-validation_loader = DataLoader(validation_dataset,
-                               batch_size=batch_size, shuffle=False,
-                               num_workers=4, collate_fn=collator)
-print('Found', len(validation_dataset), 'images belonging to',
-      len(validation_dataset.classes), 'classes')
-
-print('Test: ', end="")
-test_dataset = datasets.ImageFolder(root=datapath+'/test',
-                                    transform=transforms.ToTensor())
-test_loader = DataLoader(test_dataset, batch_size=batch_size,
-                         shuffle=False, num_workers=4,
-                         collate_fn=collator)
-print('Found', len(test_dataset), 'images belonging to',
-      len(test_dataset.classes), 'classes')
-
-
-# ### Learning
-
-model = ViTForImageClassification.from_pretrained(VITMODEL,
-                                                  num_labels=1,
-                                                  ignore_mismatched_sizes=True).to(device)
-optimizer = optim.Adam(model.parameters(), lr=1e-5)
-criterion = nn.BCELoss()
-
-
-def train(epoch, scores=None):
-    # Set model to training mode
+def train(data_loader, model, criterion, optimizer):
     model.train()
-    epoch_loss = 0
 
-    # Loop over each batch from the training set
-    for batch_idx, data in enumerate(train_loader):
-        # Copy data to GPU if needed
-        data["pixel_values"] = data["pixel_values"].to(device)
-        data["labels"] = data["labels"].to(device)
+    num_batches = 0
+    num_items = 0
 
-        # Zero gradient buffers
+    total_loss = 0
+    total_correct = 0
+
+    for data, target in data_loader:
+        # Copy data and targets to GPU
+        data = data.to(device)
+        target = target.to(device)
+
+        # Do a forward pass
+        output = model(data).logits.squeeze()
+
+        # Calculate the loss
+        loss = criterion(output, target)
+        total_loss += loss
+        num_batches += 1
+
+        # Count number of correct
+        total_correct += correct(output, target)
+        num_items += len(target)
+
+        # Backpropagation
+        loss.backward()
+        optimizer.step()
         optimizer.zero_grad()
 
-        # Pass data through the network
-        output = model(**data)
-
-        #output = torch.squeeze(output.logits.argmax(1))
-
-        # Calculate loss
-        epoch_loss += output.loss.data.item()
-
-        # Backpropagate
-        output.loss.backward()
-
-        # Update weights
-        optimizer.step()
-
-    epoch_loss /= len(train_loader.dataset)
-    print('Train Epoch: {}, Loss: {:.6f}'.format(epoch, epoch_loss))
-
-    if scores is not None:
-        if 'loss' not in scores:
-            scores['loss'] = []
-        scores['loss'].append(epoch_loss)
-
-    if log is not None:
-        log.add_scalar('loss', epoch_loss, epoch-1)
+    return {
+        'loss': total_loss/num_batches,
+        'accuracy': total_correct/num_items
+        }
 
 
-def evaluate(loader, scores=None, iteration=-1):
+def test(test_loader, model, criterion):
     model.eval()
-    loss, correct = 0, 0
-    for data in loader:
-        data["pixel_values"] = data["pixel_values"].to(device)
-        data["labels"] = data["labels"].to(device)
 
-        output = model(**data)
+    num_batches = len(test_loader)
+    num_items = len(test_loader.dataset)
 
-        loss += output.loss.data.item()
-
-        pred = output.logits>0.5
-        lab = data["labels"].unsqueeze(1)
-        correct += pred.eq(lab).cpu().sum()
-
-    loss /= len(loader.dataset)
-
-    accuracy = 100. * correct.to(torch.float32) / len(loader.dataset)
-
-    print('Average loss: {:.6f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
-        loss, correct, len(loader.dataset), accuracy))
-
-    if scores is not None:
-        if 'loss' not in scores:
-            scores['loss'] = []
-        if 'accuracy' not in scores:
-            scores['accuracy'] = []
-        scores['loss'].append(loss)
-        scores['accuracy'].append(accuracy)
-
-    if log is not None and iteration >= 0:
-        log.add_scalar('val_loss', loss, iteration)
-        log.add_scalar('val_acc', accuracy, iteration)
-
-
-epochs = 10
-
-train_scores = {}
-valid_scores = {}
-
-from datetime import datetime
-start_time = datetime.now()
-
-for epoch in range(1, epochs + 1):
-    train(epoch, train_scores)
+    test_loss = 0
+    total_correct = 0
 
     with torch.no_grad():
-       print('\nValidation:')
-       evaluate(validation_loader, valid_scores, epoch-1)
+        for data, target in test_loader:
+            # Copy data and targets to GPU
+            data = data.to(device)
+            target = target.to(device)
 
-end_time = datetime.now()
-print('Total training time: {}.'.format(end_time - start_time))
+            # Do a forward pass
+            output = model(data).logits.squeeze()
 
-### Inference
+            # Calculate the loss
+            loss = criterion(output, target)
+            test_loss += loss.item()
 
-print('\nTesting:')
-with torch.no_grad():
-    evaluate(test_loader)
+            # Count number of correct digits
+            total_correct += correct(output, target)
+
+    return {
+        'loss': test_loss/num_batches,
+        'accuracy': total_correct/num_items
+    }
+
+
+def log_measures(ret, log, prefix, epoch):
+    if log is not None:
+        for key, value in ret.items():
+            log.add_scalar(prefix + "_" + key, value, epoch)
+
+
+class ImageClassificationCollator:
+    def __init__(self, processor):
+        self.processor = processor
+
+    def __call__(self, batch):
+        data = self.processor([x[0] for x in batch], do_rescale=False,
+                              return_tensors='pt').pixel_values
+        targets = torch.tensor([x[1] for x in batch], dtype=torch.float32)
+        return data, targets
+
+
+def main():
+    # TensorBoard for logging
+    try:
+        import tensorboardX
+        time_str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        logdir = os.path.join(os.getcwd(), "logs", "dvc-vit-" + time_str)
+        print('TensorBoard log directory:', logdir)
+        os.makedirs(logdir)
+        log = tensorboardX.SummaryWriter(logdir)
+    except ImportError:
+        log = None
+
+    # The training dataset consists of 2000 images of dogs and cats, split
+    # in half.  In addition, the validation set consists of 1000 images,
+    # and the test set of 22000 images.
+    #
+    # First, we'll resize all training and validation images to a fixed
+    # size.
+    #
+    # Then, to make the most of our limited number of training examples,
+    # we'll apply random transformations to them each time we are looping
+    # over them. This way, we "augment" our training dataset to contain
+    # more data. There are various transformations available in
+    # torchvision, see:
+    # https://pytorch.org/docs/stable/torchvision/transforms.html
+
+    datapath = os.getenv('DATADIR')
+    if datapath is None:
+        print("Please set DATADIR environment variable!")
+        sys.exit(1)
+    datapath = os.path.join(datapath, 'dogs-vs-cats/train-2000')
+
+    # Data loaders
+    batch_size = 32
+
+    vitmodel = 'google/vit-base-patch16-224'
+    processor = AutoImageProcessor.from_pretrained(vitmodel)
+    collator = ImageClassificationCollator(processor)
+
+    print('Train: ', end="")
+    train_dataset = datasets.ImageFolder(root=datapath+'/train',
+                                         transform=transforms.ToTensor())
+    train_loader = DataLoader(train_dataset, batch_size=batch_size,
+                              shuffle=True, num_workers=4,
+                              collate_fn=collator)
+    print('Found', len(train_dataset), 'images belonging to',
+          len(train_dataset.classes), 'classes')
+
+    print('Validation: ', end="")
+    validation_dataset = datasets.ImageFolder(root=datapath+'/validation',
+                                              transform=transforms.ToTensor())
+    validation_loader = DataLoader(validation_dataset, batch_size=batch_size,
+                                   shuffle=False, num_workers=4,
+                                   collate_fn=collator)
+    print('Found', len(validation_dataset), 'images belonging to',
+          len(validation_dataset.classes), 'classes')
+
+    print('Test: ', end="")
+    test_dataset = datasets.ImageFolder(root=datapath+'/test',
+                                        transform=transforms.ToTensor())
+    test_loader = DataLoader(test_dataset, batch_size=batch_size,
+                             shuffle=False, num_workers=4,
+                             collate_fn=collator)
+    print('Found', len(test_dataset), 'images belonging to',
+          len(test_dataset.classes), 'classes')
+
+    # Define the network and training parameters
+    model = ViTForImageClassification.from_pretrained(
+        vitmodel, num_labels=1, ignore_mismatched_sizes=True)
+    model = model.to(device)
+    optimizer = optim.Adam(model.parameters(), lr=1e-5)
+    criterion = nn.BCEWithLogitsLoss()
+
+    print(model)
+
+    num_epochs = 10
+
+    # Training loop
+    start_time = datetime.now()
+    for epoch in range(num_epochs):
+        train_ret = train(train_loader, model, criterion, optimizer)
+        log_measures(train_ret, log, "train", epoch)
+
+        val_ret = test(validation_loader, model, criterion)
+        log_measures(val_ret, log, "val", epoch)
+        print(f"Epoch {epoch+1}: "
+              f"train loss: {train_ret['loss']:.6f} "
+              f"train accuracy: {train_ret['accuracy']:.2%}, "
+              f"val accuracy: {val_ret['accuracy']:.2%}")
+
+    end_time = datetime.now()
+    print('Total training time: {}.'.format(end_time - start_time))
+
+    # Inference
+    ret = test(test_loader, model, criterion)
+    print(f"\nTesting: accuracy: {ret['accuracy']:.2%}")
+
+
+if __name__ == "__main__":
+    main()
