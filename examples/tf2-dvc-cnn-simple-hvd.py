@@ -180,8 +180,7 @@ opt = hvd.DistributedOptimizer(opt)
 # TensorFlow uses hvd.DistributedOptimizer() to compute gradients.
 model.compile(loss='binary_crossentropy',
               optimizer=opt,
-              metrics=['accuracy'],
-              experimental_run_tf_function=False)
+              metrics=['accuracy'])
 if hvd.rank() == 0:
     print(model.summary())
 
