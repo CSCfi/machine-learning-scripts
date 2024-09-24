@@ -21,7 +21,13 @@ export PATH=${OLLAMA_DIR}/bin:$PATH
 
 # If you want to direct ollama server's outputs to a separate log file
 # you can start it like this instead:
-ollama serve >> ${OLLAMA_DIR}/log 2>&1 &
+ollama serve > ${OLLAMA_DIR}/ollama-${SLURM_JOB_ID}.log 2>&1 &
+
+# Capture process id of ollama server
+OLLAMA_PID=$!
+
+# Wait to make sure Ollama has started properly
+sleep 5
 
 # After this you can use ollama normally in this session
 
@@ -29,8 +35,14 @@ ollama serve >> ${OLLAMA_DIR}/log 2>&1 &
 ollama pull llama3.1:8b
 ollama list
 
+ollama run llama3.1:8b "Why is the sky blue?"
+
 # Try REST API
-curl http://localhost:11434/api/generate -d '{
-  "model": "llama3.1:8b",
-  "prompt":"Why is the sky blue?"
-}'
+# curl http://localhost:11434/api/generate -d '{
+#   "model": "llama3.1:8b",
+#   "prompt":"Why is the sky blue?"
+# }'
+
+
+# At the end of the job, stop the ollama server
+kill $OLLAMA_PID
