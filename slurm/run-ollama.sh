@@ -8,10 +8,11 @@
 #SBATCH --time=15
 #SBATCH --gres=gpu:v100:1,nvme:100
 
-# Start ollama server at start of job
-export OLLAMA_MODELS=/scratch/project_2001659/mvsjober/ollama-models
-mkdir -p $OLLAMA_MODELS
+# Put ollama models to scratch rather than home directory
+export OLLAMA_SCRATCH=/scratch/project_2001659/mvsjober/ollama
+mkdir -p ${OLLAMA_SCRATCH}/models
 
+# Path to where ollama was installed
 OLLAMA_DIR=/projappl/project_2001659/mvsjober/ollama
 export PATH=${OLLAMA_DIR}/bin:$PATH
 
@@ -20,8 +21,9 @@ export PATH=${OLLAMA_DIR}/bin:$PATH
 #ollama serve &
 
 # If you want to direct ollama server's outputs to a separate log file
-# you can start it like this instead:
-ollama serve > ${OLLAMA_DIR}/ollama-${SLURM_JOB_ID}.log 2>&1 &
+# you can start it like this instead
+mkdir -p ${OLLAMA_SCRATCH}/logs
+ollama serve > ${OLLAMA_SCRATCH}/logs/${SLURM_JOB_ID}.log 2>&1 &
 
 # Capture process id of ollama server
 OLLAMA_PID=$!
