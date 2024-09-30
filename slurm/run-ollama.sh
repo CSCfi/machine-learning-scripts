@@ -8,13 +8,12 @@
 #SBATCH --time=15
 #SBATCH --gres=gpu:v100:1,nvme:100
 
-# Put ollama models to scratch rather than home directory
-export OLLAMA_SCRATCH=/scratch/project_2001659/mvsjober/ollama
-mkdir -p ${OLLAMA_SCRATCH}/models
+# Download ollama models to scratch rather than the home directory
+OLLAMA_SCRATCH=/scratch/project_2001659/mvsjober/ollama
+export OLLAMA_MODELS=${OLLAMA_SCRATCH}/models
 
-# Path to where ollama was installed
-OLLAMA_DIR=/projappl/project_2001659/mvsjober/ollama
-export PATH=${OLLAMA_DIR}/bin:$PATH
+# Add ollama installation dir to PATH
+export PATH=/projappl/project_2001659/mvsjober/ollama/bin:$PATH
 
 # Simple way to start ollama. All the server outputs will appear in
 # the slurm log mixed with everything else.
@@ -33,13 +32,12 @@ sleep 5
 
 # After this you can use ollama normally in this session
 
-# Use ollama commands
+# Example: use ollama commands
 ollama pull llama3.1:8b
 ollama list
-
 ollama run llama3.1:8b "Why is the sky blue?"
 
-# Try REST API
+# Example: Try REST API
 # curl http://localhost:11434/api/generate -d '{
 #   "model": "llama3.1:8b",
 #   "prompt":"Why is the sky blue?"
