@@ -9,6 +9,7 @@ class TwoLayerMLP(nn.Module):
             nn.Linear(50, 50),
             nn.ReLU(),
             nn.Dropout(0.2),
+            nn.Linear(50, 10)
         )
 
     def forward(self, x):
